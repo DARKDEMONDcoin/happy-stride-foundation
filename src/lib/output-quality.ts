@@ -309,8 +309,8 @@ export function auditOutput(input: {
   }
 
   if (input.employeeId === "nour" && kind === "article") {
-    if (!/(?:الكاتب|بقلم|كتبته|كتبه|author)\s*[:：]?/i.test(text))
-      add("nour-author", "أضف اسم الكاتب وصفته وتاريخ المراجعة — بيانات الكاتب شرط للثقة وللظهور في مساعدات البحث.", 10);
+    if (!/(?:الكاتب|بقلم|كتبته|كتبه|author|ناقص\s+من\s+المالك)\s*[:：]?/i.test(text))
+      add("nour-author", "إن أعطاك المالك اسم الكاتب فأضفه بصفته؛ وإلا اطلبه في سطر «ناقص من المالك» — ممنوع اختراع اسم أو صفة.", 10);
     const internalLinks = (text.match(/\[[^\]]{2,80}\]\((?:\/|https?:\/\/)[^)]+\)/g) ?? []).length;
     if (internalLinks < 3)
       add("nour-internal-links", `أضف ٣–٥ روابط داخلية سياقية + رابط لصفحة الركيزة (الحالي ${internalLinks}).`, 10);
