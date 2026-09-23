@@ -1,3 +1,4 @@
+import { GRAPH_BASE } from "./graph-version";
 /**
  * النشر المباشر على منصات ميتا (صفحات فيسبوك + إنستجرام بزنس) بتطبيق ميتا الخاص بنا.
  *
@@ -12,7 +13,7 @@ import type { Database } from "@/integrations/supabase/types";
 
 type Admin = SupabaseClient<Database>;
 
-export const GRAPH = "https://graph.facebook.com/v23.0";
+export const GRAPH = GRAPH_BASE;
 
 /** الأذونات المطلوبة أثناء ربط المستخدم لحسابه. */
 export const META_SCOPES = [

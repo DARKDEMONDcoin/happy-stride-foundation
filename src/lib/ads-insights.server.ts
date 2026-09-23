@@ -1,3 +1,4 @@
+import { GRAPH_BASE } from "./graph-version";
 /**
  * قراءة أداء الحملات الإعلانية عبر وكيل Pipedream — بلا أي توكن لدينا.
  * ميتا (فيسبوك/إنستجرام) عبر Marketing API.
@@ -26,13 +27,13 @@ export async function metaAdsSummary(
   const accounts = await proxyRequest<AdAccounts>(config, {
     workspaceId,
     accountId,
-    url: "https://graph.facebook.com/v23.0/me/adaccounts?fields=id,name,currency&limit=5",
+    url: `${GRAPH_BASE}/me/adaccounts?fields=id,name,currency&limit=5`,
   });
   const act = accounts.data?.[0];
   if (!act) return "لا حساب إعلاني مرتبط.";
 
   const url =
-    `https://graph.facebook.com/v23.0/${act.id}/insights?` +
+    `${GRAPH_BASE}/${act.id}/insights?` +
     new URLSearchParams({
       level: "campaign",
       date_preset: "last_30d",

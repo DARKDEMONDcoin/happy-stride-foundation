@@ -1,3 +1,4 @@
+import { GRAPH_BASE } from "./graph-version";
 /**
  * النشر الفعلي على المنصات الاجتماعية عبر إجراءات Pipedream الجاهزة.
  * يُستخدم من دالة الخادم (بطلب المستخدم) ومن الجدولة التلقائية بنفس المنطق.
@@ -492,7 +493,7 @@ function bytesToBase64(bytes: Uint8Array): string {
   return btoa(binary);
 }
 
-const GRAPH = "https://graph.facebook.com/v23.0";
+const GRAPH = GRAPH_BASE;
 
 /** نشر على إنستجرام (حاوية ثم نشر) أو على صفحة فيسبوك — عبر وكيل Pipedream. */
 async function publishMeta(
