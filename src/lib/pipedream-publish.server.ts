@@ -362,7 +362,7 @@ async function publishDirect(
       });
       const mediaId = uploaded.data?.id ?? uploaded.id;
       if (!mediaId) throw new Error("إكس لم يُرجع معرّف الصورة فلم يُنشر شيء — أعد المحاولة.");
-      body.media = { media_ids: [String(mediaId)] };
+      body["media"] = { media_ids: [String(mediaId)] };
     }
     const res = await proxyRequest<{ data?: { id?: string } }>(config, {
       workspaceId,
