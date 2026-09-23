@@ -127,7 +127,7 @@ async function callModel(
     headers: {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
-      "HTTP-Referer": "https://happy-stride-project.lovable.app",
+      "HTTP-Referer": "https://project--c04206f7-58fc-47a2-95b2-96102d0af72c.lovable.app",
       "X-Title": "Sahl AI Team",
     },
     body: JSON.stringify({
