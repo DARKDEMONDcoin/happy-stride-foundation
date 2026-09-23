@@ -1,3 +1,4 @@
+import { GRAPH_BASE } from "./graph-version";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database } from "@/integrations/supabase/types";
@@ -549,15 +550,15 @@ async function readMetaPerformance(
   const accounts = await proxyRequest<MetaAccounts>(config, {
     workspaceId,
     accountId: acc.account_id,
-    url: "https://graph.facebook.com/v23.0/me/accounts?fields=id,name,instagram_business_account&limit=5",
+    url: `${GRAPH_BASE}/me/accounts?fields=id,name,instagram_business_account&limit=5`,
   });
   const page = accounts.data?.[0];
   const target = provider === "instagram" ? page?.instagram_business_account?.id : page?.id;
   if (!target) return [];
   const url =
     provider === "instagram"
-      ? `https://graph.facebook.com/v23.0/${target}/media?fields=id,caption,timestamp,permalink,like_count,comments_count&limit=25`
-      : `https://graph.facebook.com/v23.0/${target}/posts?fields=id,message,created_time,permalink_url,likes.summary(true),comments.summary(true)&limit=25`;
+      ? `${GRAPH_BASE}/${target}/media?fields=id,caption,timestamp,permalink,like_count,comments_count&limit=25`
+      : `${GRAPH_BASE}/${target}/posts?fields=id,message,created_time,permalink_url,likes.summary(true),comments.summary(true)&limit=25`;
   const posts = await proxyRequest<
     MetaPosts & {
       data?: {

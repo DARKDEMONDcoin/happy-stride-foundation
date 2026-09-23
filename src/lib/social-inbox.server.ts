@@ -1,3 +1,4 @@
+import { GRAPH_BASE } from "./graph-version";
 /**
  * صندوق التفاعل الاجتماعي: تعليقات ورسائل صفحات فيسبوك وحسابات إنستجرام
  * تُقرأ وتُردّ عليها عبر وكيل Pipedream — بلا أي توكن مخزّن لدينا.
@@ -7,7 +8,7 @@
  */
 import { proxyRequest, type PipedreamConfig } from "./pipedream.server";
 
-const GRAPH = "https://graph.facebook.com/v23.0";
+const GRAPH = GRAPH_BASE;
 
 export type PageTarget = { id: string; name: string; token: string; igId?: string };
 

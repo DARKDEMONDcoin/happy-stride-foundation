@@ -1,3 +1,4 @@
+import { GRAPH_BASE } from "./graph-version";
 /**
  * «الأدلة الحيّة» من حسابات المستخدم المربوطة عبر Pipedream.
  *
@@ -222,7 +223,7 @@ async function readMeta(
   const accounts = await proxyRequest<MetaAccounts>(config, {
     workspaceId,
     accountId,
-    url: "https://graph.facebook.com/v23.0/me/accounts?fields=id,name,instagram_business_account&limit=5",
+    url: `${GRAPH_BASE}/me/accounts?fields=id,name,instagram_business_account&limit=5`,
   });
   const page = accounts.data?.[0];
   if (!page) return "لا صفحة مرتبطة بالحساب.";
@@ -232,8 +233,8 @@ async function readMeta(
 
   const url =
     provider === "instagram"
-      ? `https://graph.facebook.com/v23.0/${target}/media?fields=caption,timestamp,permalink,like_count,comments_count&limit=10`
-      : `https://graph.facebook.com/v23.0/${target}/posts?fields=message,created_time,permalink_url&limit=10`;
+      ? `${GRAPH_BASE}/${target}/media?fields=caption,timestamp,permalink,like_count,comments_count&limit=10`
+      : `${GRAPH_BASE}/${target}/posts?fields=message,created_time,permalink_url&limit=10`;
 
   const posts = await proxyRequest<MetaPosts>(config, { workspaceId, accountId, url });
   const items = posts.data ?? [];

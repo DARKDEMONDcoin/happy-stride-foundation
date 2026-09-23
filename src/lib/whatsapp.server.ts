@@ -1,3 +1,4 @@
+import { GRAPH_BASE } from "./graph-version";
 /**
  * قناة واتساب للأعمال — الإرسال عبر وكيل Pipedream (لا نحتفظ بأي توكن)،
  * مع دعم رجعي لتوكن مباشر إن كان محفوظاً من ربط قديم.
@@ -9,7 +10,7 @@ import type { Database } from "@/integrations/supabase/types";
 
 type Admin = SupabaseClient<Database>;
 
-const GRAPH = "https://graph.facebook.com/v23.0";
+const GRAPH = GRAPH_BASE;
 
 export type WhatsappCreds = {
   /** مساحة العمل صاحبة القناة (لازمة لنداءات الوسيط). */

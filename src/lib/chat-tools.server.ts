@@ -697,6 +697,111 @@ export async function runChatTools(
     }
   }
 
+  // ---------- آدم (التحليلات): أرقام GA4 وSearch Console الحقيقية قبل أي تحليل ----------
+  if (params.employeeId === "adam") {
+    const jobs: Promise<ChatToolResult | null>[] = [];
+    const wantsWeb =
+      /زيارات|زوار|ترافيك|traffic|جلسات|موقع|analytics|تحليلات|تقرير|أداء|نمو|تحويل|بحث|جوجل|search console|كلمات|مقارنة|ليه|لماذا|انخفاض|نزول|ارتفاع/i.test(
+        text,
+      );
+    if (wantsWeb) {
+      jobs.push(
+        (async () => {
+          try {
+            const { ga4SnapshotDetailed } = await import("./ga4.functions");
+            const g = await ga4SnapshotDetailed(params.workspaceId, 28);
+            if (!g.snapshot) {
+              return {
+                tool: "ga4",
+                block: `Google Analytics: ${g.status.message} — قل ذلك بصراحة ولا تذكر أي رقم زيارات.`,
+                footer: "",
+              };
+            }
+            const s = g.snapshot;
+            return {
+              tool: "ga4",
+              block: [
+                `### زيارات حقيقية من Google Analytics 4 (${s.range.start} → ${s.range.end})`,
+                `الجلسات: ${s.totals.sessions} · المستخدمون: ${s.totals.users} · الجلسات المتفاعلة: ${s.totals.engagedSessions}`,
+                s.channels.length
+                  ? `مصادر الزيارات: ${s.channels.map((c) => `${c.channel} (${c.sessions})`).join(" | ")}`
+                  : "",
+                s.organicLandingPages.length
+                  ? `أفضل صفحات الدخول من البحث: ${s.organicLandingPages
+                      .slice(0, 8)
+                      .map((p) => `${p.page} (${p.sessions})`)
+                      .join(" | ")}`
+                  : "",
+                "حلّل هذه الأرقام فقط؛ أي رقم غير موجود هنا اذكره كغير متاح لا كتقدير.",
+              ]
+                .filter(Boolean)
+                .join("\n"),
+              footer: "لوحة الزيارات الكاملة في «التقارير».",
+            };
+          } catch {
+            return null;
+          }
+        })(),
+      );
+      jobs.push(
+        (async () => {
+          try {
+            const { gscSnapshotDetailed } = await import("./gsc.functions");
+            const g = await gscSnapshotDetailed(params.workspaceId, 28);
+            if (!g.snapshot) {
+              return {
+                tool: "gsc",
+                block: `Search Console: ${g.status.message} — لا تذكر أرقام بحث جوجل.`,
+                footer: "",
+              };
+            }
+            return {
+              tool: "gsc",
+              block: [
+                `### أداء البحث الحقيقي من Search Console (${g.snapshot.site} · ${g.snapshot.range.start} → ${g.snapshot.range.end})`,
+                `أكثر الكلمات: ${g.snapshot.queries
+                  .slice(0, 8)
+                  .map(
+                    (q) =>
+                      `${q.key} (${q.clicks} نقرة · ${q.impressions} ظهور · مركز ${q.position.toFixed(1)})`,
+                  )
+                  .join(" | ")}`,
+                `أكثر الصفحات: ${g.snapshot.pages
+                  .slice(0, 6)
+                  .map((p) => `${p.key} (${p.clicks} نقرة)`)
+                  .join(" | ")}`,
+              ].join("\n"),
+              footer: "",
+            };
+          } catch {
+            return null;
+          }
+        })(),
+      );
+    }
+    if (jobs.length) {
+      const raceCapMs = Math.min(Math.max(left(), 5_000), 20_000);
+      const settled = await Promise.race([
+        Promise.all(jobs),
+        new Promise<(ChatToolResult | null)[]>((resolve) => setTimeout(() => resolve([]), raceCapMs)),
+      ]);
+      for (const r of settled) if (r) out.push(r);
+    }
+  }
+
+  // ---------- أمَل/سالم/دانة: لا أدوات قراءة حيّة أثناء المحادثة — نمنع ادّعاء الاطلاع ----------
+  if (params.employeeId === "eva" || params.employeeId === "sam" || params.employeeId === "dana") {
+    out.push({
+      tool: "live-data-honesty",
+      block: [
+        "### حدود الاطلاع في هذه المحادثة",
+        "لم تُقرأ الآن بيانات حيّة من البريد أو التقويم أو CRM أو ملفات التصميم إلا ما يظهر صراحةً في كتلة «سياق حيّ» إن وُجدت.",
+        "لا تدّعِ أنك اطّلعت على رسائل أو صفقات أو ملفات لم تُعرض عليك، ولا تذكر أرقاماً أو أسماء غير موجودة فعلاً في السياق؛ اعرض بدلاً من ذلك تنفيذ الإجراء المناسب بعد موافقة المستخدم.",
+      ].join("\n"),
+      footer: "",
+    });
+  }
+
   // ---------- حالة التكاملات (للموظفين معاً) ----------
   if (/تكامل|التكاملات|مربوط|الربط|اربط|حساباتي|أي منصات|integrations?/i.test(text)) {
     const { employeeDirectory } = await import("./team-knowledge");

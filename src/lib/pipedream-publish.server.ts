@@ -1,3 +1,4 @@
+import { GRAPH_BASE } from "./graph-version";
 /**
  * النشر الفعلي على المنصات الاجتماعية عبر إجراءات Pipedream الجاهزة.
  * يُستخدم من دالة الخادم (بطلب المستخدم) ومن الجدولة التلقائية بنفس المنطق.
@@ -340,13 +341,38 @@ async function publishDirect(
   imageUrl?: string,
 ): Promise<unknown | undefined> {
   if (provider === "x") {
-    return proxyRequest(config, {
+    const body: Record<string, unknown> = { text: assertXLength(text) };
+    if (imageUrl) {
+      // الصورة جزء من الطلب: إن تعذّر رفعها نفشل بوضوح بدل نشر نص بلا صورة ثم ادّعاء النجاح.
+      const img = await fetchImageBytes(imageUrl);
+      const uploaded = await proxyRequest<{ data?: { id?: string }; id?: string }>(config, {
+        workspaceId,
+        accountId,
+        method: "POST",
+        url: "https://api.x.com/2/media/upload",
+        body: {
+          media: bytesToBase64(img.bytes),
+          media_category: "tweet_image",
+          media_type: img.type,
+        },
+      }).catch((error) => {
+        throw new Error(
+          `تعذّر رفع الصورة إلى إكس فلم يُنشر شيء — ${error instanceof Error ? error.message : "خطأ"}`,
+        );
+      });
+      const mediaId = uploaded.data?.id ?? uploaded.id;
+      if (!mediaId) throw new Error("إكس لم يُرجع معرّف الصورة فلم يُنشر شيء — أعد المحاولة.");
+      body["media"] = { media_ids: [String(mediaId)] };
+    }
+    const res = await proxyRequest<{ data?: { id?: string } }>(config, {
       workspaceId,
       accountId,
       method: "POST",
-      url: "https://api.twitter.com/2/tweets",
-      body: { text: assertXLength(text) },
+      url: "https://api.x.com/2/tweets",
+      body,
     });
+    if (!res.data?.id) throw new Error("إكس لم يؤكد إنشاء التغريدة — تحقق من الحساب قبل إعادة النشر.");
+    return res;
   }
 
   if (provider === "linkedin") {
@@ -356,34 +382,77 @@ async function publishDirect(
       url: "https://api.linkedin.com/v2/userinfo",
     });
     if (!me.sub) throw new Error("تعذّر تحديد حساب لينكدإن — أعد الربط من صفحة التكاملات.");
+    const author = `urn:li:person:${me.sub}`;
+    const liHeaders = { "LinkedIn-Version": LINKEDIN_VERSION, "X-Restli-Protocol-Version": "2.0.0" };
+
+    let imageUrn: string | undefined;
+    if (imageUrl) {
+      try {
+        const img = await fetchImageBytes(imageUrl);
+        const init = await proxyRequest<{ value?: { uploadUrl?: string; image?: string } }>(config, {
+          workspaceId,
+          accountId,
+          method: "POST",
+          url: "https://api.linkedin.com/rest/images?action=initializeUpload",
+          headers: liHeaders,
+          body: { initializeUploadRequest: { owner: author } },
+        });
+        if (!init.value?.uploadUrl || !init.value.image) throw new Error("no upload url");
+        await proxyRequest(config, {
+          workspaceId,
+          accountId,
+          method: "PUT",
+          url: init.value.uploadUrl,
+          binaryBody: img.bytes,
+          headers: { "Content-Type": img.type },
+        });
+        imageUrn = init.value.image;
+      } catch (error) {
+        throw new Error(
+          `تعذّر رفع الصورة إلى لينكدإن فلم يُنشر شيء — ${error instanceof Error ? error.message : "خطأ"}`,
+        );
+      }
+    }
+
+    // واجهة Posts الحديثة (بدل ugcPosts القديمة).
     return proxyRequest(config, {
       workspaceId,
       accountId,
       method: "POST",
-      url: "https://api.linkedin.com/v2/ugcPosts",
-      headers: { "X-Restli-Protocol-Version": "2.0.0" },
+      url: "https://api.linkedin.com/rest/posts",
+      headers: liHeaders,
       body: {
-        author: `urn:li:person:${me.sub}`,
-        lifecycleState: "PUBLISHED",
-        specificContent: {
-          "com.linkedin.ugc.ShareContent": {
-            shareCommentary: { text },
-            shareMediaCategory: "NONE",
-          },
+        author,
+        commentary: text,
+        visibility: "PUBLIC",
+        distribution: {
+          feedDistribution: "MAIN_FEED",
+          targetEntities: [],
+          thirdPartyDistributionChannels: [],
         },
-        visibility: { "com.linkedin.ugc.MemberNetworkVisibility": "PUBLIC" },
+        ...(imageUrn ? { content: { media: { id: imageUrn } } } : {}),
+        lifecycleState: "PUBLISHED",
+        isReshareDisabledByAuthor: false,
       },
     });
   }
 
   if (provider === "pinterest") {
     if (!imageUrl) throw new Error("بينترست يتطلب صورة مع البِن.");
-    const boards = await proxyRequest<{ items?: { id?: string }[] }>(config, {
+    const boards = await proxyRequest<{
+      items?: { id?: string; name?: string; privacy?: string; pin_count?: number }[];
+    }>(config, {
       workspaceId,
       accountId,
-      url: "https://api.pinterest.com/v5/boards?page_size=1",
+      url: "https://api.pinterest.com/v5/boards?page_size=50",
     });
-    const boardId = boards.items?.[0]?.id;
+    // لوح عام ونشط أولاً (الأكثر بِنات) بدل أول لوح عشوائي — والألواح السرية آخر خيار.
+    const list = (boards.items ?? []).filter((b) => b.id);
+    const pick =
+      [...list]
+        .filter((b) => (b.privacy ?? "PUBLIC") === "PUBLIC")
+        .sort((a, b) => (b.pin_count ?? 0) - (a.pin_count ?? 0))[0] ?? list[0];
+    const boardId = pick?.id;
     if (!boardId)
       throw new Error("لا يوجد لوح (Board) في حساب بينترست — أنشئ لوحاً ثم أعد المحاولة.");
     return proxyRequest(config, {
@@ -403,7 +472,28 @@ async function publishDirect(
   return undefined;
 }
 
-const GRAPH = "https://graph.facebook.com/v23.0";
+const LINKEDIN_VERSION = "202606";
+
+async function fetchImageBytes(url: string): Promise<{ bytes: Uint8Array; type: string }> {
+  const res = await fetch(url, { signal: AbortSignal.timeout(20_000) });
+  if (!res.ok) throw new Error(`تعذّر تحميل الصورة [${res.status}]`);
+  const type = (res.headers.get("content-type") ?? "image/jpeg").split(";")[0]!.trim();
+  if (!type.startsWith("image/")) throw new Error("الرابط لا يشير إلى صورة");
+  const bytes = new Uint8Array(await res.arrayBuffer());
+  if (bytes.byteLength > 5 * 1024 * 1024) throw new Error("حجم الصورة أكبر من 5MB");
+  return { bytes, type };
+}
+
+function bytesToBase64(bytes: Uint8Array): string {
+  let binary = "";
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+  }
+  return btoa(binary);
+}
+
+const GRAPH = GRAPH_BASE;
 
 /** نشر على إنستجرام (حاوية ثم نشر) أو على صفحة فيسبوك — عبر وكيل Pipedream. */
 async function publishMeta(

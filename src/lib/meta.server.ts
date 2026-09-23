@@ -1,3 +1,4 @@
+import { GRAPH_BASE, GRAPH_VERSION } from "./graph-version";
 /**
  * النشر المباشر على منصات ميتا (صفحات فيسبوك + إنستجرام بزنس) بتطبيق ميتا الخاص بنا.
  *
@@ -12,7 +13,7 @@ import type { Database } from "@/integrations/supabase/types";
 
 type Admin = SupabaseClient<Database>;
 
-export const GRAPH = "https://graph.facebook.com/v23.0";
+export const GRAPH = GRAPH_BASE;
 
 /** الأذونات المطلوبة أثناء ربط المستخدم لحسابه. */
 export const META_SCOPES = [
@@ -157,7 +158,7 @@ export function metaAuthorizeUrl(
   state: string,
   scopes: readonly string[] = META_SCOPES,
 ): string {
-  const url = new URL("https://www.facebook.com/v23.0/dialog/oauth");
+  const url = new URL(`https://www.facebook.com/${GRAPH_VERSION}/dialog/oauth`);
   url.searchParams.set("client_id", config.appId);
   url.searchParams.set("redirect_uri", redirectUri);
   url.searchParams.set("state", state);
@@ -682,6 +683,10 @@ async function waitForContainer(conn: MetaConnection, containerId: string): Prom
         "إنستجرام رفض الوسائط — استخدم MP4 عمودياً (9:16) أقل من ٩٠ ثانية أو صوراً بصيغة JPG.",
       );
   }
+  // لم يُرفض الملف لكنه ما زال قيد المعالجة — عطل مؤقت (يُعاد لاحقاً) لا رفض للوسائط.
+  throw new Error(
+    "إنستجرام ما زال يعالج الوسائط (timeout) — لم تُرفض، سنعيد المحاولة تلقائياً بعد قليل.",
+  );
 }
 
 /** نشر على إنستجرام: حاوية (أو كاروسيل) ثم media_publish مع انتظار معالجة الفيديو. */

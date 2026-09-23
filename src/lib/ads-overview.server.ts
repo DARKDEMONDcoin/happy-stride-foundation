@@ -1,3 +1,4 @@
+import { GRAPH_BASE } from "./graph-version";
 /**
  * ملخّص مُهيكل لأداء حملات ميتا (آخر ٣٠ يوماً) لعرضه في نظرة عامة.
  * لا أرقام مُختلقة: كل قيمة تأتي من Marketing API عبر وكيل Pipedream.
@@ -53,13 +54,13 @@ export async function metaAdsOverview(
   const accounts = await proxyRequest<AdAccounts>(config, {
     workspaceId,
     accountId,
-    url: "https://graph.facebook.com/v23.0/me/adaccounts?fields=id,name,currency&limit=5",
+    url: `${GRAPH_BASE}/me/adaccounts?fields=id,name,currency&limit=5`,
   });
   const act = accounts.data?.[0];
   if (!act) return null;
 
   const url =
-    `https://graph.facebook.com/v23.0/${act.id}/insights?` +
+    `${GRAPH_BASE}/${act.id}/insights?` +
     new URLSearchParams({
       level: "campaign",
       date_preset: "last_30d",

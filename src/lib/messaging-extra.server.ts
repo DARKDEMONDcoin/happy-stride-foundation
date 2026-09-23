@@ -1,3 +1,4 @@
+import { GRAPH_BASE } from "./graph-version";
 /**
  * واتساب للأعمال، وجوجل درايف — عبر وكيل Pipedream (بلا أي توكن لدينا).
  */
@@ -15,21 +16,21 @@ export async function whatsappPhoneId(
     const businesses = await proxyRequest<{ data?: { id: string }[] }>(config, {
       workspaceId,
       accountId,
-      url: "https://graph.facebook.com/v23.0/me/businesses?limit=5",
+      url: `${GRAPH_BASE}/me/businesses?limit=5`,
     });
     const businessId = businesses.data?.[0]?.id;
     if (!businessId) return null;
     const wabas = await proxyRequest<{ data?: { id: string }[] }>(config, {
       workspaceId,
       accountId,
-      url: `https://graph.facebook.com/v23.0/${businessId}/owned_whatsapp_business_accounts?limit=5`,
+      url: `${GRAPH_BASE}/${businessId}/owned_whatsapp_business_accounts?limit=5`,
     });
     const waba = wabas.data?.[0]?.id;
     if (!waba) return null;
     const phones = await proxyRequest<WaPhones>(config, {
       workspaceId,
       accountId,
-      url: `https://graph.facebook.com/v23.0/${waba}/phone_numbers?limit=5`,
+      url: `${GRAPH_BASE}/${waba}/phone_numbers?limit=5`,
     });
     return phones.data?.[0]?.id ?? null;
   } catch {
@@ -52,7 +53,7 @@ export async function sendWhatsappText(
     workspaceId,
     accountId,
     method: "POST",
-    url: `https://graph.facebook.com/v23.0/${phoneId}/messages`,
+    url: `${GRAPH_BASE}/${phoneId}/messages`,
     body: {
       messaging_product: "whatsapp",
       to: params.to,
