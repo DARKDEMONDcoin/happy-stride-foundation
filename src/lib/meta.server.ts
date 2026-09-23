@@ -1,4 +1,4 @@
-import { GRAPH_BASE } from "./graph-version";
+import { GRAPH_BASE, GRAPH_VERSION } from "./graph-version";
 /**
  * النشر المباشر على منصات ميتا (صفحات فيسبوك + إنستجرام بزنس) بتطبيق ميتا الخاص بنا.
  *
@@ -158,7 +158,7 @@ export function metaAuthorizeUrl(
   state: string,
   scopes: readonly string[] = META_SCOPES,
 ): string {
-  const url = new URL("https://www.facebook.com/v23.0/dialog/oauth");
+  const url = new URL(`https://www.facebook.com/${GRAPH_VERSION}/dialog/oauth`);
   url.searchParams.set("client_id", config.appId);
   url.searchParams.set("redirect_uri", redirectUri);
   url.searchParams.set("state", state);
