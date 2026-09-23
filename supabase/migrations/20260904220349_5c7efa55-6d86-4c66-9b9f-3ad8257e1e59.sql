@@ -1,0 +1,2 @@
+CREATE POLICY "nour_media_owner_update" ON storage.objects FOR UPDATE TO authenticated USING (bucket_id = 'nour-media' AND public.owns_workspace((storage.foldername(name))[1]::uuid)) WITH CHECK (bucket_id = 'nour-media' AND public.owns_workspace((storage.foldername(name))[1]::uuid));
+CREATE POLICY "nour_media_owner_delete" ON storage.objects FOR DELETE TO authenticated USING (bucket_id = 'nour-media' AND public.owns_workspace((storage.foldername(name))[1]::uuid));

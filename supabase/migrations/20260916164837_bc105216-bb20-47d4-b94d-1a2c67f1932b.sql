@@ -1,0 +1,1 @@
+CREATE POLICY "Deny direct cron token access" ON private.cron_tokens FOR ALL TO PUBLIC USING (false) WITH CHECK (false);

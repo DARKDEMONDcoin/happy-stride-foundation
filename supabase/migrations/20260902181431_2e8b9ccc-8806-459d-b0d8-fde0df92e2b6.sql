@@ -1,0 +1,51 @@
+-- 1) إضافة مزوّد IndexNow (إشعار محركات البحث المجاني) لكل مساحات العمل الحالية
+INSERT INTO public.integrations (workspace_id, employee_id, provider, status)
+SELECT w.id, 'nour', 'indexnow', 'disconnected'
+FROM public.workspaces w
+WHERE NOT EXISTS (
+  SELECT 1 FROM public.integrations i
+  WHERE i.workspace_id = w.id AND i.provider = 'indexnow'
+);
+
+-- 2) تضمين IndexNow في مساحات العمل الجديدة
+CREATE OR REPLACE FUNCTION public.handle_new_user() RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+  ws_id uuid;
+  company_name text;
+BEGIN
+  company_name := COALESCE(NEW.raw_user_meta_data->>'company', 'علامتي');
+
+  INSERT INTO public.profiles (id, full_name, company)
+  VALUES (NEW.id, COALESCE(NEW.raw_user_meta_data->>'full_name', ''), company_name)
+  ON CONFLICT (id) DO NOTHING;
+
+  INSERT INTO public.workspaces (owner_id, name, industry, initials)
+  VALUES (NEW.id, company_name, COALESCE(NEW.raw_user_meta_data->>'industry', 'عام'), substr(company_name, 1, 2))
+  RETURNING id INTO ws_id;
+
+  INSERT INTO public.integrations (workspace_id, employee_id, provider, status) VALUES
+    (ws_id,'sonny','instagram','disconnected'),
+    (ws_id,'sonny','x','disconnected'),
+    (ws_id,'sonny','linkedin','disconnected'),
+    (ws_id,'sonny','tiktok','disconnected'),
+    (ws_id,'sonny','facebook','disconnected'),
+    (ws_id,'eva','gmail','disconnected'),
+    (ws_id,'eva','calendar','disconnected'),
+    (ws_id,'eva','whatsapp','disconnected'),
+    (ws_id,'sam','hubspot','disconnected'),
+    (ws_id,'sam','sheets','disconnected'),
+    (ws_id,'nour','wordpress','disconnected'),
+    (ws_id,'nour','search-console','disconnected'),
+    (ws_id,'nour','indexnow','disconnected'),
+    (ws_id,'dana','figma','disconnected'),
+    (ws_id,'dana','canva','disconnected'),
+    (ws_id,'adam','analytics','disconnected'),
+    (ws_id,'adam','meta-ads','disconnected');
+
+  INSERT INTO public.brain_items (workspace_id, kind, title, meta, body, used_by) VALUES
+    (ws_id,'note','نبرة العلامة: دافئة، واثقة، بدون مبالغة','ملاحظة · تم إنشاؤها تلقائياً','اكتب دائماً بنبرة دافئة وواثقة وبدون مبالغة.', ARRAY['sonny','nour','eva']),
+    (ws_id,'note','كلمات ممنوعة: «الأفضل في العالم»، «مجاناً 100%»','ملاحظة · قاعدة إلزامية','تجنّب هذه العبارات في كل المخرجات.', ARRAY['sonny','nour','sam']);
+  RETURN NEW;
+END; $$;
+
+REVOKE ALL ON FUNCTION public.handle_new_user() FROM PUBLIC, anon, authenticated;
