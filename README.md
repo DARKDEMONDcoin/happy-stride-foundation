@@ -1,14 +1,20 @@
-# Welcome to your Lovable project
+# Marblism Deep Dive
+
+السلام عليكم، بص الموقع دة اعمل ديب سيرش عميق جدا جدا جدا عنة وكل حاجة عنة اعمل اقصي ديب سيرش عميق جدا جدا جدا عن الموقع دة :
+
+https://www.marblism.com/?via=mariam-el-sayed&gad_source=1&gad_campaignid=23961736462&gbraid=0AAAABD_7tf2sdH5scTcfMwp2wlRO7oOJu&gclid=Cj0KCQjw79nUBhCgARIsADSHka3-UTqSDyqd38PpEzPEmYFilZNXSvrSyp_wJs8bsZS-fQD3VIf_S-0aAjvTEALw_wcB
+
+وقولي احنا نقدر نعمل مثلة وافضل ازاي ولاحظ لا نريد تكاليف كلة مجاني لكن الأفضل ، اعمل ديب سيرش عميق جدا جدا جدا لكلة حرفياً وقولي هننفذ ازاي قولي فقط تناقش معايا ولا تنفذ شئ
 
 This project was built with [Lovable](https://lovable.dev).
 
 ## Build with Lovable
 
-Open your project in the [Lovable editor](https://lovable.dev) and keep building.
+Continue developing this project in the [Lovable editor](https://lovable.dev/projects/cd8afcaa-5cb1-477a-ba5e-5620deec22db).
 
 - **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: connect the project to GitHub and every change made in Lovable is committed straight to your repository.
-- **Full ownership**: this code is yours. Push to your repository and your changes sync back into Lovable, ready for your next prompt.
+- **Stay in sync**: every change made in Lovable is committed straight to this repository.
+- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
 
 ## Development
 
@@ -20,10 +26,3 @@ cd <repository-name>
 npm i
 npm run dev
 ```
-
-## Built with
-
-- TanStack Start
-- TypeScript
-- React
-- Tailwind CSS

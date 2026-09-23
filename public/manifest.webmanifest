@@ -1,0 +1,14 @@
+{
+  "name": "سهل — فريق موظفين بالذكاء الاصطناعي",
+  "short_name": "سهل",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#9B741E",
+  "background_color": "#9B741E",
+  "icons": [
+    { "src": "/favicon.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/favicon.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

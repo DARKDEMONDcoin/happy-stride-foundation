@@ -36,5 +36,10 @@ export default tseslint.config(
       "@typescript-eslint/no-unused-vars": "off",
     },
   },
+  {
+    // سكربتات التشخيص المحلية (ليست جزءاً من التطبيق) — نسمح فيها بأنواع مرنة.
+    files: ["scripts/**/*.{ts,tsx}"],
+    rules: { "@typescript-eslint/no-explicit-any": "off" },
+  },
   eslintPluginPrettier,
 );

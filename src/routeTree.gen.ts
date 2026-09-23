@@ -10,33 +10,778 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AboutRouteImport } from './routes/about'
+import { Route as AcceptableUseRouteImport } from './routes/acceptable-use'
+import { Route as AppRouteImport } from './routes/app'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as ContactRouteImport } from './routes/contact'
+import { Route as CookiesRouteImport } from './routes/cookies'
+import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as DpaRouteImport } from './routes/dpa'
+import { Route as FaqRouteImport } from './routes/faq'
+import { Route as FeaturesRouteImport } from './routes/features'
+import { Route as HowItWorksRouteImport } from './routes/how-it-works'
+import { Route as IntegrationsRouteImport } from './routes/integrations'
+import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as PricingRouteImport } from './routes/pricing'
+import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as RefundsRouteImport } from './routes/refunds'
+import { Route as SecurityRouteImport } from './routes/security'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as StoriesRouteImport } from './routes/stories'
+import { Route as SubprocessorsRouteImport } from './routes/subprocessors'
+import { Route as TermsRouteImport } from './routes/terms'
+import { Route as ApiEmployeeStreamRouteImport } from './routes/api/employee-stream'
+import { Route as AppIndexRouteImport } from './routes/app.index'
+import { Route as AppApprovalsRouteImport } from './routes/app.approvals'
+import { Route as AppAutomationsRouteImport } from './routes/app.automations'
+import { Route as AppAutopilotRouteImport } from './routes/app.autopilot'
+import { Route as AppBrainRouteImport } from './routes/app.brain'
+import { Route as AppCalendarRouteImport } from './routes/app.calendar'
+import { Route as AppDecisionsRouteImport } from './routes/app.decisions'
+import { Route as AppDiscoveryRouteImport } from './routes/app.discovery'
+import { Route as AppIntegrationsRouteImport } from './routes/app.integrations'
+import { Route as AppProposalsRouteImport } from './routes/app.proposals'
+import { Route as AppQueueRouteImport } from './routes/app.queue'
+import { Route as AppRankingsRouteImport } from './routes/app.rankings'
+import { Route as AppReportsRouteImport } from './routes/app.reports'
+import { Route as AppSettingsRouteImport } from './routes/app.settings'
+import { Route as AppTasksRouteImport } from './routes/app.tasks'
+import { Route as BlogIndexRouteImport } from './routes/blog.index'
+import { Route as BlogSlugRouteImport } from './routes/blog.$slug'
+import { Route as EmployeesIndexRouteImport } from './routes/employees.index'
+import { Route as EmployeesIdRouteImport } from './routes/employees.$id'
+import { Route as UseCasesIndexRouteImport } from './routes/use-cases.index'
+import { Route as UseCasesIdRouteImport } from './routes/use-cases.$id'
+import { Route as ApiPublicLearningCycleRouteImport } from './routes/api/public/learning-cycle'
+import { Route as ApiPublicMorningBriefingRouteImport } from './routes/api/public/morning-briefing'
+import { Route as ApiPublicNourAutomationsRouteImport } from './routes/api/public/nour-automations'
+import { Route as ApiPublicNourWeeklyRouteImport } from './routes/api/public/nour-weekly'
+import { Route as ApiPublicPipedreamWebhookRouteImport } from './routes/api/public/pipedream-webhook'
+import { Route as ApiPublicProactiveRouteImport } from './routes/api/public/proactive'
+import { Route as ApiPublicPxRouteImport } from './routes/api/public/px'
+import { Route as ApiPublicSocialAutopilotRouteImport } from './routes/api/public/social-autopilot'
+import { Route as ApiPublicSocialQueueRouteImport } from './routes/api/public/social-queue'
+import { Route as ApiPublicTrackRouteImport } from './routes/api/public/track'
+import { Route as AppChatIndexRouteImport } from './routes/app.chat.index'
+import { Route as AppChatIdRouteImport } from './routes/app.chat.$id'
+import { Route as ApiPublicMetaCallbackRouteImport } from './routes/api/public/meta.callback'
+import { Route as ApiPublicTelegramWebhookRouteImport } from './routes/api/public/telegram.webhook'
+import { Route as ApiPublicWhatsappWebhookRouteImport } from './routes/api/public/whatsapp.webhook'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AboutRoute = AboutRouteImport.update({
+  id: '/about',
+  path: '/about',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AcceptableUseRoute = AcceptableUseRouteImport.update({
+  id: '/acceptable-use',
+  path: '/acceptable-use',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppRoute = AppRouteImport.update({
+  id: '/app',
+  path: '/app',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContactRoute = ContactRouteImport.update({
+  id: '/contact',
+  path: '/contact',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CookiesRoute = CookiesRouteImport.update({
+  id: '/cookies',
+  path: '/cookies',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DpaRoute = DpaRouteImport.update({
+  id: '/dpa',
+  path: '/dpa',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FaqRoute = FaqRouteImport.update({
+  id: '/faq',
+  path: '/faq',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FeaturesRoute = FeaturesRouteImport.update({
+  id: '/features',
+  path: '/features',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HowItWorksRoute = HowItWorksRouteImport.update({
+  id: '/how-it-works',
+  path: '/how-it-works',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IntegrationsRoute = IntegrationsRouteImport.update({
+  id: '/integrations',
+  path: '/integrations',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OnboardingRoute = OnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PricingRoute = PricingRouteImport.update({
+  id: '/pricing',
+  path: '/pricing',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RefundsRoute = RefundsRouteImport.update({
+  id: '/refunds',
+  path: '/refunds',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SecurityRoute = SecurityRouteImport.update({
+  id: '/security',
+  path: '/security',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StoriesRoute = StoriesRouteImport.update({
+  id: '/stories',
+  path: '/stories',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SubprocessorsRoute = SubprocessorsRouteImport.update({
+  id: '/subprocessors',
+  path: '/subprocessors',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiEmployeeStreamRoute = ApiEmployeeStreamRouteImport.update({
+  id: '/api/employee-stream',
+  path: '/api/employee-stream',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppIndexRoute = AppIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppApprovalsRoute = AppApprovalsRouteImport.update({
+  id: '/approvals',
+  path: '/approvals',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAutomationsRoute = AppAutomationsRouteImport.update({
+  id: '/automations',
+  path: '/automations',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAutopilotRoute = AppAutopilotRouteImport.update({
+  id: '/autopilot',
+  path: '/autopilot',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppBrainRoute = AppBrainRouteImport.update({
+  id: '/brain',
+  path: '/brain',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppCalendarRoute = AppCalendarRouteImport.update({
+  id: '/calendar',
+  path: '/calendar',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppDecisionsRoute = AppDecisionsRouteImport.update({
+  id: '/decisions',
+  path: '/decisions',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppDiscoveryRoute = AppDiscoveryRouteImport.update({
+  id: '/discovery',
+  path: '/discovery',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppIntegrationsRoute = AppIntegrationsRouteImport.update({
+  id: '/integrations',
+  path: '/integrations',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppProposalsRoute = AppProposalsRouteImport.update({
+  id: '/proposals',
+  path: '/proposals',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppQueueRoute = AppQueueRouteImport.update({
+  id: '/queue',
+  path: '/queue',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppRankingsRoute = AppRankingsRouteImport.update({
+  id: '/rankings',
+  path: '/rankings',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppReportsRoute = AppReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSettingsRoute = AppSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppTasksRoute = AppTasksRouteImport.update({
+  id: '/tasks',
+  path: '/tasks',
+  getParentRoute: () => AppRoute,
+} as any)
+const BlogIndexRoute = BlogIndexRouteImport.update({
+  id: '/blog/',
+  path: '/blog/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BlogSlugRoute = BlogSlugRouteImport.update({
+  id: '/blog/$slug',
+  path: '/blog/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EmployeesIndexRoute = EmployeesIndexRouteImport.update({
+  id: '/employees/',
+  path: '/employees/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EmployeesIdRoute = EmployeesIdRouteImport.update({
+  id: '/employees/$id',
+  path: '/employees/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UseCasesIndexRoute = UseCasesIndexRouteImport.update({
+  id: '/use-cases/',
+  path: '/use-cases/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UseCasesIdRoute = UseCasesIdRouteImport.update({
+  id: '/use-cases/$id',
+  path: '/use-cases/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicLearningCycleRoute = ApiPublicLearningCycleRouteImport.update({
+  id: '/api/public/learning-cycle',
+  path: '/api/public/learning-cycle',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicMorningBriefingRoute =
+  ApiPublicMorningBriefingRouteImport.update({
+    id: '/api/public/morning-briefing',
+    path: '/api/public/morning-briefing',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicNourAutomationsRoute =
+  ApiPublicNourAutomationsRouteImport.update({
+    id: '/api/public/nour-automations',
+    path: '/api/public/nour-automations',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicNourWeeklyRoute = ApiPublicNourWeeklyRouteImport.update({
+  id: '/api/public/nour-weekly',
+  path: '/api/public/nour-weekly',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicPipedreamWebhookRoute =
+  ApiPublicPipedreamWebhookRouteImport.update({
+    id: '/api/public/pipedream-webhook',
+    path: '/api/public/pipedream-webhook',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicProactiveRoute = ApiPublicProactiveRouteImport.update({
+  id: '/api/public/proactive',
+  path: '/api/public/proactive',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicPxRoute = ApiPublicPxRouteImport.update({
+  id: '/api/public/px',
+  path: '/api/public/px',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicSocialAutopilotRoute =
+  ApiPublicSocialAutopilotRouteImport.update({
+    id: '/api/public/social-autopilot',
+    path: '/api/public/social-autopilot',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicSocialQueueRoute = ApiPublicSocialQueueRouteImport.update({
+  id: '/api/public/social-queue',
+  path: '/api/public/social-queue',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicTrackRoute = ApiPublicTrackRouteImport.update({
+  id: '/api/public/track',
+  path: '/api/public/track',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppChatIndexRoute = AppChatIndexRouteImport.update({
+  id: '/chat/',
+  path: '/chat/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppChatIdRoute = AppChatIdRouteImport.update({
+  id: '/chat/$id',
+  path: '/chat/$id',
+  getParentRoute: () => AppRoute,
+} as any)
+const ApiPublicMetaCallbackRoute = ApiPublicMetaCallbackRouteImport.update({
+  id: '/api/public/meta/callback',
+  path: '/api/public/meta/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicTelegramWebhookRoute =
+  ApiPublicTelegramWebhookRouteImport.update({
+    id: '/api/public/telegram/webhook',
+    path: '/api/public/telegram/webhook',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicWhatsappWebhookRoute =
+  ApiPublicWhatsappWebhookRouteImport.update({
+    id: '/api/public/whatsapp/webhook',
+    path: '/api/public/whatsapp/webhook',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
+  '/acceptable-use': typeof AcceptableUseRoute
+  '/app': typeof AppRouteWithChildren
+  '/auth': typeof AuthRoute
+  '/contact': typeof ContactRoute
+  '/cookies': typeof CookiesRoute
+  '/dashboard': typeof DashboardRoute
+  '/dpa': typeof DpaRoute
+  '/faq': typeof FaqRoute
+  '/features': typeof FeaturesRoute
+  '/how-it-works': typeof HowItWorksRoute
+  '/integrations': typeof IntegrationsRoute
+  '/onboarding': typeof OnboardingRoute
+  '/pricing': typeof PricingRoute
+  '/privacy': typeof PrivacyRoute
+  '/refunds': typeof RefundsRoute
+  '/security': typeof SecurityRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/stories': typeof StoriesRoute
+  '/subprocessors': typeof SubprocessorsRoute
+  '/terms': typeof TermsRoute
+  '/api/employee-stream': typeof ApiEmployeeStreamRoute
+  '/app/approvals': typeof AppApprovalsRoute
+  '/app/automations': typeof AppAutomationsRoute
+  '/app/autopilot': typeof AppAutopilotRoute
+  '/app/brain': typeof AppBrainRoute
+  '/app/calendar': typeof AppCalendarRoute
+  '/app/decisions': typeof AppDecisionsRoute
+  '/app/discovery': typeof AppDiscoveryRoute
+  '/app/integrations': typeof AppIntegrationsRoute
+  '/app/proposals': typeof AppProposalsRoute
+  '/app/queue': typeof AppQueueRoute
+  '/app/rankings': typeof AppRankingsRoute
+  '/app/reports': typeof AppReportsRoute
+  '/app/settings': typeof AppSettingsRoute
+  '/app/tasks': typeof AppTasksRoute
+  '/blog/$slug': typeof BlogSlugRoute
+  '/employees/$id': typeof EmployeesIdRoute
+  '/use-cases/$id': typeof UseCasesIdRoute
+  '/app/': typeof AppIndexRoute
+  '/blog/': typeof BlogIndexRoute
+  '/employees/': typeof EmployeesIndexRoute
+  '/use-cases/': typeof UseCasesIndexRoute
+  '/api/public/learning-cycle': typeof ApiPublicLearningCycleRoute
+  '/api/public/morning-briefing': typeof ApiPublicMorningBriefingRoute
+  '/api/public/nour-automations': typeof ApiPublicNourAutomationsRoute
+  '/api/public/nour-weekly': typeof ApiPublicNourWeeklyRoute
+  '/api/public/pipedream-webhook': typeof ApiPublicPipedreamWebhookRoute
+  '/api/public/proactive': typeof ApiPublicProactiveRoute
+  '/api/public/px': typeof ApiPublicPxRoute
+  '/api/public/social-autopilot': typeof ApiPublicSocialAutopilotRoute
+  '/api/public/social-queue': typeof ApiPublicSocialQueueRoute
+  '/api/public/track': typeof ApiPublicTrackRoute
+  '/app/chat/$id': typeof AppChatIdRoute
+  '/app/chat/': typeof AppChatIndexRoute
+  '/api/public/meta/callback': typeof ApiPublicMetaCallbackRoute
+  '/api/public/telegram/webhook': typeof ApiPublicTelegramWebhookRoute
+  '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
+  '/acceptable-use': typeof AcceptableUseRoute
+  '/auth': typeof AuthRoute
+  '/contact': typeof ContactRoute
+  '/cookies': typeof CookiesRoute
+  '/dashboard': typeof DashboardRoute
+  '/dpa': typeof DpaRoute
+  '/faq': typeof FaqRoute
+  '/features': typeof FeaturesRoute
+  '/how-it-works': typeof HowItWorksRoute
+  '/integrations': typeof IntegrationsRoute
+  '/onboarding': typeof OnboardingRoute
+  '/pricing': typeof PricingRoute
+  '/privacy': typeof PrivacyRoute
+  '/refunds': typeof RefundsRoute
+  '/security': typeof SecurityRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/stories': typeof StoriesRoute
+  '/subprocessors': typeof SubprocessorsRoute
+  '/terms': typeof TermsRoute
+  '/api/employee-stream': typeof ApiEmployeeStreamRoute
+  '/app/approvals': typeof AppApprovalsRoute
+  '/app/automations': typeof AppAutomationsRoute
+  '/app/autopilot': typeof AppAutopilotRoute
+  '/app/brain': typeof AppBrainRoute
+  '/app/calendar': typeof AppCalendarRoute
+  '/app/decisions': typeof AppDecisionsRoute
+  '/app/discovery': typeof AppDiscoveryRoute
+  '/app/integrations': typeof AppIntegrationsRoute
+  '/app/proposals': typeof AppProposalsRoute
+  '/app/queue': typeof AppQueueRoute
+  '/app/rankings': typeof AppRankingsRoute
+  '/app/reports': typeof AppReportsRoute
+  '/app/settings': typeof AppSettingsRoute
+  '/app/tasks': typeof AppTasksRoute
+  '/blog/$slug': typeof BlogSlugRoute
+  '/employees/$id': typeof EmployeesIdRoute
+  '/use-cases/$id': typeof UseCasesIdRoute
+  '/app': typeof AppIndexRoute
+  '/blog': typeof BlogIndexRoute
+  '/employees': typeof EmployeesIndexRoute
+  '/use-cases': typeof UseCasesIndexRoute
+  '/api/public/learning-cycle': typeof ApiPublicLearningCycleRoute
+  '/api/public/morning-briefing': typeof ApiPublicMorningBriefingRoute
+  '/api/public/nour-automations': typeof ApiPublicNourAutomationsRoute
+  '/api/public/nour-weekly': typeof ApiPublicNourWeeklyRoute
+  '/api/public/pipedream-webhook': typeof ApiPublicPipedreamWebhookRoute
+  '/api/public/proactive': typeof ApiPublicProactiveRoute
+  '/api/public/px': typeof ApiPublicPxRoute
+  '/api/public/social-autopilot': typeof ApiPublicSocialAutopilotRoute
+  '/api/public/social-queue': typeof ApiPublicSocialQueueRoute
+  '/api/public/track': typeof ApiPublicTrackRoute
+  '/app/chat/$id': typeof AppChatIdRoute
+  '/app/chat': typeof AppChatIndexRoute
+  '/api/public/meta/callback': typeof ApiPublicMetaCallbackRoute
+  '/api/public/telegram/webhook': typeof ApiPublicTelegramWebhookRoute
+  '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
+  '/acceptable-use': typeof AcceptableUseRoute
+  '/app': typeof AppRouteWithChildren
+  '/auth': typeof AuthRoute
+  '/contact': typeof ContactRoute
+  '/cookies': typeof CookiesRoute
+  '/dashboard': typeof DashboardRoute
+  '/dpa': typeof DpaRoute
+  '/faq': typeof FaqRoute
+  '/features': typeof FeaturesRoute
+  '/how-it-works': typeof HowItWorksRoute
+  '/integrations': typeof IntegrationsRoute
+  '/onboarding': typeof OnboardingRoute
+  '/pricing': typeof PricingRoute
+  '/privacy': typeof PrivacyRoute
+  '/refunds': typeof RefundsRoute
+  '/security': typeof SecurityRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/stories': typeof StoriesRoute
+  '/subprocessors': typeof SubprocessorsRoute
+  '/terms': typeof TermsRoute
+  '/api/employee-stream': typeof ApiEmployeeStreamRoute
+  '/app/approvals': typeof AppApprovalsRoute
+  '/app/automations': typeof AppAutomationsRoute
+  '/app/autopilot': typeof AppAutopilotRoute
+  '/app/brain': typeof AppBrainRoute
+  '/app/calendar': typeof AppCalendarRoute
+  '/app/decisions': typeof AppDecisionsRoute
+  '/app/discovery': typeof AppDiscoveryRoute
+  '/app/integrations': typeof AppIntegrationsRoute
+  '/app/proposals': typeof AppProposalsRoute
+  '/app/queue': typeof AppQueueRoute
+  '/app/rankings': typeof AppRankingsRoute
+  '/app/reports': typeof AppReportsRoute
+  '/app/settings': typeof AppSettingsRoute
+  '/app/tasks': typeof AppTasksRoute
+  '/blog/$slug': typeof BlogSlugRoute
+  '/employees/$id': typeof EmployeesIdRoute
+  '/use-cases/$id': typeof UseCasesIdRoute
+  '/app/': typeof AppIndexRoute
+  '/blog/': typeof BlogIndexRoute
+  '/employees/': typeof EmployeesIndexRoute
+  '/use-cases/': typeof UseCasesIndexRoute
+  '/api/public/learning-cycle': typeof ApiPublicLearningCycleRoute
+  '/api/public/morning-briefing': typeof ApiPublicMorningBriefingRoute
+  '/api/public/nour-automations': typeof ApiPublicNourAutomationsRoute
+  '/api/public/nour-weekly': typeof ApiPublicNourWeeklyRoute
+  '/api/public/pipedream-webhook': typeof ApiPublicPipedreamWebhookRoute
+  '/api/public/proactive': typeof ApiPublicProactiveRoute
+  '/api/public/px': typeof ApiPublicPxRoute
+  '/api/public/social-autopilot': typeof ApiPublicSocialAutopilotRoute
+  '/api/public/social-queue': typeof ApiPublicSocialQueueRoute
+  '/api/public/track': typeof ApiPublicTrackRoute
+  '/app/chat/$id': typeof AppChatIdRoute
+  '/app/chat/': typeof AppChatIndexRoute
+  '/api/public/meta/callback': typeof ApiPublicMetaCallbackRoute
+  '/api/public/telegram/webhook': typeof ApiPublicTelegramWebhookRoute
+  '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/about'
+    | '/acceptable-use'
+    | '/app'
+    | '/auth'
+    | '/contact'
+    | '/cookies'
+    | '/dashboard'
+    | '/dpa'
+    | '/faq'
+    | '/features'
+    | '/how-it-works'
+    | '/integrations'
+    | '/onboarding'
+    | '/pricing'
+    | '/privacy'
+    | '/refunds'
+    | '/security'
+    | '/sitemap.xml'
+    | '/stories'
+    | '/subprocessors'
+    | '/terms'
+    | '/api/employee-stream'
+    | '/app/approvals'
+    | '/app/automations'
+    | '/app/autopilot'
+    | '/app/brain'
+    | '/app/calendar'
+    | '/app/decisions'
+    | '/app/discovery'
+    | '/app/integrations'
+    | '/app/proposals'
+    | '/app/queue'
+    | '/app/rankings'
+    | '/app/reports'
+    | '/app/settings'
+    | '/app/tasks'
+    | '/blog/$slug'
+    | '/employees/$id'
+    | '/use-cases/$id'
+    | '/app/'
+    | '/blog/'
+    | '/employees/'
+    | '/use-cases/'
+    | '/api/public/learning-cycle'
+    | '/api/public/morning-briefing'
+    | '/api/public/nour-automations'
+    | '/api/public/nour-weekly'
+    | '/api/public/pipedream-webhook'
+    | '/api/public/proactive'
+    | '/api/public/px'
+    | '/api/public/social-autopilot'
+    | '/api/public/social-queue'
+    | '/api/public/track'
+    | '/app/chat/$id'
+    | '/app/chat/'
+    | '/api/public/meta/callback'
+    | '/api/public/telegram/webhook'
+    | '/api/public/whatsapp/webhook'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/about'
+    | '/acceptable-use'
+    | '/auth'
+    | '/contact'
+    | '/cookies'
+    | '/dashboard'
+    | '/dpa'
+    | '/faq'
+    | '/features'
+    | '/how-it-works'
+    | '/integrations'
+    | '/onboarding'
+    | '/pricing'
+    | '/privacy'
+    | '/refunds'
+    | '/security'
+    | '/sitemap.xml'
+    | '/stories'
+    | '/subprocessors'
+    | '/terms'
+    | '/api/employee-stream'
+    | '/app/approvals'
+    | '/app/automations'
+    | '/app/autopilot'
+    | '/app/brain'
+    | '/app/calendar'
+    | '/app/decisions'
+    | '/app/discovery'
+    | '/app/integrations'
+    | '/app/proposals'
+    | '/app/queue'
+    | '/app/rankings'
+    | '/app/reports'
+    | '/app/settings'
+    | '/app/tasks'
+    | '/blog/$slug'
+    | '/employees/$id'
+    | '/use-cases/$id'
+    | '/app'
+    | '/blog'
+    | '/employees'
+    | '/use-cases'
+    | '/api/public/learning-cycle'
+    | '/api/public/morning-briefing'
+    | '/api/public/nour-automations'
+    | '/api/public/nour-weekly'
+    | '/api/public/pipedream-webhook'
+    | '/api/public/proactive'
+    | '/api/public/px'
+    | '/api/public/social-autopilot'
+    | '/api/public/social-queue'
+    | '/api/public/track'
+    | '/app/chat/$id'
+    | '/app/chat'
+    | '/api/public/meta/callback'
+    | '/api/public/telegram/webhook'
+    | '/api/public/whatsapp/webhook'
+  id:
+    | '__root__'
+    | '/'
+    | '/about'
+    | '/acceptable-use'
+    | '/app'
+    | '/auth'
+    | '/contact'
+    | '/cookies'
+    | '/dashboard'
+    | '/dpa'
+    | '/faq'
+    | '/features'
+    | '/how-it-works'
+    | '/integrations'
+    | '/onboarding'
+    | '/pricing'
+    | '/privacy'
+    | '/refunds'
+    | '/security'
+    | '/sitemap.xml'
+    | '/stories'
+    | '/subprocessors'
+    | '/terms'
+    | '/api/employee-stream'
+    | '/app/approvals'
+    | '/app/automations'
+    | '/app/autopilot'
+    | '/app/brain'
+    | '/app/calendar'
+    | '/app/decisions'
+    | '/app/discovery'
+    | '/app/integrations'
+    | '/app/proposals'
+    | '/app/queue'
+    | '/app/rankings'
+    | '/app/reports'
+    | '/app/settings'
+    | '/app/tasks'
+    | '/blog/$slug'
+    | '/employees/$id'
+    | '/use-cases/$id'
+    | '/app/'
+    | '/blog/'
+    | '/employees/'
+    | '/use-cases/'
+    | '/api/public/learning-cycle'
+    | '/api/public/morning-briefing'
+    | '/api/public/nour-automations'
+    | '/api/public/nour-weekly'
+    | '/api/public/pipedream-webhook'
+    | '/api/public/proactive'
+    | '/api/public/px'
+    | '/api/public/social-autopilot'
+    | '/api/public/social-queue'
+    | '/api/public/track'
+    | '/app/chat/$id'
+    | '/app/chat/'
+    | '/api/public/meta/callback'
+    | '/api/public/telegram/webhook'
+    | '/api/public/whatsapp/webhook'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AboutRoute: typeof AboutRoute
+  AcceptableUseRoute: typeof AcceptableUseRoute
+  AppRoute: typeof AppRouteWithChildren
+  AuthRoute: typeof AuthRoute
+  ContactRoute: typeof ContactRoute
+  CookiesRoute: typeof CookiesRoute
+  DashboardRoute: typeof DashboardRoute
+  DpaRoute: typeof DpaRoute
+  FaqRoute: typeof FaqRoute
+  FeaturesRoute: typeof FeaturesRoute
+  HowItWorksRoute: typeof HowItWorksRoute
+  IntegrationsRoute: typeof IntegrationsRoute
+  OnboardingRoute: typeof OnboardingRoute
+  PricingRoute: typeof PricingRoute
+  PrivacyRoute: typeof PrivacyRoute
+  RefundsRoute: typeof RefundsRoute
+  SecurityRoute: typeof SecurityRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  StoriesRoute: typeof StoriesRoute
+  SubprocessorsRoute: typeof SubprocessorsRoute
+  TermsRoute: typeof TermsRoute
+  ApiEmployeeStreamRoute: typeof ApiEmployeeStreamRoute
+  BlogSlugRoute: typeof BlogSlugRoute
+  EmployeesIdRoute: typeof EmployeesIdRoute
+  UseCasesIdRoute: typeof UseCasesIdRoute
+  BlogIndexRoute: typeof BlogIndexRoute
+  EmployeesIndexRoute: typeof EmployeesIndexRoute
+  UseCasesIndexRoute: typeof UseCasesIndexRoute
+  ApiPublicLearningCycleRoute: typeof ApiPublicLearningCycleRoute
+  ApiPublicMorningBriefingRoute: typeof ApiPublicMorningBriefingRoute
+  ApiPublicNourAutomationsRoute: typeof ApiPublicNourAutomationsRoute
+  ApiPublicNourWeeklyRoute: typeof ApiPublicNourWeeklyRoute
+  ApiPublicPipedreamWebhookRoute: typeof ApiPublicPipedreamWebhookRoute
+  ApiPublicProactiveRoute: typeof ApiPublicProactiveRoute
+  ApiPublicPxRoute: typeof ApiPublicPxRoute
+  ApiPublicSocialAutopilotRoute: typeof ApiPublicSocialAutopilotRoute
+  ApiPublicSocialQueueRoute: typeof ApiPublicSocialQueueRoute
+  ApiPublicTrackRoute: typeof ApiPublicTrackRoute
+  ApiPublicMetaCallbackRoute: typeof ApiPublicMetaCallbackRoute
+  ApiPublicTelegramWebhookRoute: typeof ApiPublicTelegramWebhookRoute
+  ApiPublicWhatsappWebhookRoute: typeof ApiPublicWhatsappWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +793,500 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/about': {
+      id: '/about'
+      path: '/about'
+      fullPath: '/about'
+      preLoaderRoute: typeof AboutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/acceptable-use': {
+      id: '/acceptable-use'
+      path: '/acceptable-use'
+      fullPath: '/acceptable-use'
+      preLoaderRoute: typeof AcceptableUseRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/app': {
+      id: '/app'
+      path: '/app'
+      fullPath: '/app'
+      preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contact': {
+      id: '/contact'
+      path: '/contact'
+      fullPath: '/contact'
+      preLoaderRoute: typeof ContactRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cookies': {
+      id: '/cookies'
+      path: '/cookies'
+      fullPath: '/cookies'
+      preLoaderRoute: typeof CookiesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dpa': {
+      id: '/dpa'
+      path: '/dpa'
+      fullPath: '/dpa'
+      preLoaderRoute: typeof DpaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/faq': {
+      id: '/faq'
+      path: '/faq'
+      fullPath: '/faq'
+      preLoaderRoute: typeof FaqRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/features': {
+      id: '/features'
+      path: '/features'
+      fullPath: '/features'
+      preLoaderRoute: typeof FeaturesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/how-it-works': {
+      id: '/how-it-works'
+      path: '/how-it-works'
+      fullPath: '/how-it-works'
+      preLoaderRoute: typeof HowItWorksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/integrations': {
+      id: '/integrations'
+      path: '/integrations'
+      fullPath: '/integrations'
+      preLoaderRoute: typeof IntegrationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/onboarding': {
+      id: '/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof OnboardingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pricing': {
+      id: '/pricing'
+      path: '/pricing'
+      fullPath: '/pricing'
+      preLoaderRoute: typeof PricingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/refunds': {
+      id: '/refunds'
+      path: '/refunds'
+      fullPath: '/refunds'
+      preLoaderRoute: typeof RefundsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/security': {
+      id: '/security'
+      path: '/security'
+      fullPath: '/security'
+      preLoaderRoute: typeof SecurityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/stories': {
+      id: '/stories'
+      path: '/stories'
+      fullPath: '/stories'
+      preLoaderRoute: typeof StoriesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/subprocessors': {
+      id: '/subprocessors'
+      path: '/subprocessors'
+      fullPath: '/subprocessors'
+      preLoaderRoute: typeof SubprocessorsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/employee-stream': {
+      id: '/api/employee-stream'
+      path: '/api/employee-stream'
+      fullPath: '/api/employee-stream'
+      preLoaderRoute: typeof ApiEmployeeStreamRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/app/': {
+      id: '/app/'
+      path: '/'
+      fullPath: '/app/'
+      preLoaderRoute: typeof AppIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/approvals': {
+      id: '/app/approvals'
+      path: '/approvals'
+      fullPath: '/app/approvals'
+      preLoaderRoute: typeof AppApprovalsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/automations': {
+      id: '/app/automations'
+      path: '/automations'
+      fullPath: '/app/automations'
+      preLoaderRoute: typeof AppAutomationsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/autopilot': {
+      id: '/app/autopilot'
+      path: '/autopilot'
+      fullPath: '/app/autopilot'
+      preLoaderRoute: typeof AppAutopilotRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/brain': {
+      id: '/app/brain'
+      path: '/brain'
+      fullPath: '/app/brain'
+      preLoaderRoute: typeof AppBrainRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/calendar': {
+      id: '/app/calendar'
+      path: '/calendar'
+      fullPath: '/app/calendar'
+      preLoaderRoute: typeof AppCalendarRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/decisions': {
+      id: '/app/decisions'
+      path: '/decisions'
+      fullPath: '/app/decisions'
+      preLoaderRoute: typeof AppDecisionsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/discovery': {
+      id: '/app/discovery'
+      path: '/discovery'
+      fullPath: '/app/discovery'
+      preLoaderRoute: typeof AppDiscoveryRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/integrations': {
+      id: '/app/integrations'
+      path: '/integrations'
+      fullPath: '/app/integrations'
+      preLoaderRoute: typeof AppIntegrationsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/proposals': {
+      id: '/app/proposals'
+      path: '/proposals'
+      fullPath: '/app/proposals'
+      preLoaderRoute: typeof AppProposalsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/queue': {
+      id: '/app/queue'
+      path: '/queue'
+      fullPath: '/app/queue'
+      preLoaderRoute: typeof AppQueueRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/rankings': {
+      id: '/app/rankings'
+      path: '/rankings'
+      fullPath: '/app/rankings'
+      preLoaderRoute: typeof AppRankingsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/reports': {
+      id: '/app/reports'
+      path: '/reports'
+      fullPath: '/app/reports'
+      preLoaderRoute: typeof AppReportsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/settings': {
+      id: '/app/settings'
+      path: '/settings'
+      fullPath: '/app/settings'
+      preLoaderRoute: typeof AppSettingsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/tasks': {
+      id: '/app/tasks'
+      path: '/tasks'
+      fullPath: '/app/tasks'
+      preLoaderRoute: typeof AppTasksRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/blog/': {
+      id: '/blog/'
+      path: '/blog'
+      fullPath: '/blog/'
+      preLoaderRoute: typeof BlogIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/blog/$slug': {
+      id: '/blog/$slug'
+      path: '/blog/$slug'
+      fullPath: '/blog/$slug'
+      preLoaderRoute: typeof BlogSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/employees/': {
+      id: '/employees/'
+      path: '/employees'
+      fullPath: '/employees/'
+      preLoaderRoute: typeof EmployeesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/employees/$id': {
+      id: '/employees/$id'
+      path: '/employees/$id'
+      fullPath: '/employees/$id'
+      preLoaderRoute: typeof EmployeesIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/use-cases/': {
+      id: '/use-cases/'
+      path: '/use-cases'
+      fullPath: '/use-cases/'
+      preLoaderRoute: typeof UseCasesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/use-cases/$id': {
+      id: '/use-cases/$id'
+      path: '/use-cases/$id'
+      fullPath: '/use-cases/$id'
+      preLoaderRoute: typeof UseCasesIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/learning-cycle': {
+      id: '/api/public/learning-cycle'
+      path: '/api/public/learning-cycle'
+      fullPath: '/api/public/learning-cycle'
+      preLoaderRoute: typeof ApiPublicLearningCycleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/morning-briefing': {
+      id: '/api/public/morning-briefing'
+      path: '/api/public/morning-briefing'
+      fullPath: '/api/public/morning-briefing'
+      preLoaderRoute: typeof ApiPublicMorningBriefingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/nour-automations': {
+      id: '/api/public/nour-automations'
+      path: '/api/public/nour-automations'
+      fullPath: '/api/public/nour-automations'
+      preLoaderRoute: typeof ApiPublicNourAutomationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/nour-weekly': {
+      id: '/api/public/nour-weekly'
+      path: '/api/public/nour-weekly'
+      fullPath: '/api/public/nour-weekly'
+      preLoaderRoute: typeof ApiPublicNourWeeklyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/pipedream-webhook': {
+      id: '/api/public/pipedream-webhook'
+      path: '/api/public/pipedream-webhook'
+      fullPath: '/api/public/pipedream-webhook'
+      preLoaderRoute: typeof ApiPublicPipedreamWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/proactive': {
+      id: '/api/public/proactive'
+      path: '/api/public/proactive'
+      fullPath: '/api/public/proactive'
+      preLoaderRoute: typeof ApiPublicProactiveRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/px': {
+      id: '/api/public/px'
+      path: '/api/public/px'
+      fullPath: '/api/public/px'
+      preLoaderRoute: typeof ApiPublicPxRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/social-autopilot': {
+      id: '/api/public/social-autopilot'
+      path: '/api/public/social-autopilot'
+      fullPath: '/api/public/social-autopilot'
+      preLoaderRoute: typeof ApiPublicSocialAutopilotRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/social-queue': {
+      id: '/api/public/social-queue'
+      path: '/api/public/social-queue'
+      fullPath: '/api/public/social-queue'
+      preLoaderRoute: typeof ApiPublicSocialQueueRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/track': {
+      id: '/api/public/track'
+      path: '/api/public/track'
+      fullPath: '/api/public/track'
+      preLoaderRoute: typeof ApiPublicTrackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/app/chat/': {
+      id: '/app/chat/'
+      path: '/chat'
+      fullPath: '/app/chat/'
+      preLoaderRoute: typeof AppChatIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/chat/$id': {
+      id: '/app/chat/$id'
+      path: '/chat/$id'
+      fullPath: '/app/chat/$id'
+      preLoaderRoute: typeof AppChatIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/api/public/meta/callback': {
+      id: '/api/public/meta/callback'
+      path: '/api/public/meta/callback'
+      fullPath: '/api/public/meta/callback'
+      preLoaderRoute: typeof ApiPublicMetaCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/telegram/webhook': {
+      id: '/api/public/telegram/webhook'
+      path: '/api/public/telegram/webhook'
+      fullPath: '/api/public/telegram/webhook'
+      preLoaderRoute: typeof ApiPublicTelegramWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/whatsapp/webhook': {
+      id: '/api/public/whatsapp/webhook'
+      path: '/api/public/whatsapp/webhook'
+      fullPath: '/api/public/whatsapp/webhook'
+      preLoaderRoute: typeof ApiPublicWhatsappWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
+interface AppRouteChildren {
+  AppApprovalsRoute: typeof AppApprovalsRoute
+  AppAutomationsRoute: typeof AppAutomationsRoute
+  AppAutopilotRoute: typeof AppAutopilotRoute
+  AppBrainRoute: typeof AppBrainRoute
+  AppCalendarRoute: typeof AppCalendarRoute
+  AppDecisionsRoute: typeof AppDecisionsRoute
+  AppDiscoveryRoute: typeof AppDiscoveryRoute
+  AppIntegrationsRoute: typeof AppIntegrationsRoute
+  AppProposalsRoute: typeof AppProposalsRoute
+  AppQueueRoute: typeof AppQueueRoute
+  AppRankingsRoute: typeof AppRankingsRoute
+  AppReportsRoute: typeof AppReportsRoute
+  AppSettingsRoute: typeof AppSettingsRoute
+  AppTasksRoute: typeof AppTasksRoute
+  AppIndexRoute: typeof AppIndexRoute
+  AppChatIdRoute: typeof AppChatIdRoute
+  AppChatIndexRoute: typeof AppChatIndexRoute
+}
+
+const AppRouteChildren: AppRouteChildren = {
+  AppApprovalsRoute: AppApprovalsRoute,
+  AppAutomationsRoute: AppAutomationsRoute,
+  AppAutopilotRoute: AppAutopilotRoute,
+  AppBrainRoute: AppBrainRoute,
+  AppCalendarRoute: AppCalendarRoute,
+  AppDecisionsRoute: AppDecisionsRoute,
+  AppDiscoveryRoute: AppDiscoveryRoute,
+  AppIntegrationsRoute: AppIntegrationsRoute,
+  AppProposalsRoute: AppProposalsRoute,
+  AppQueueRoute: AppQueueRoute,
+  AppRankingsRoute: AppRankingsRoute,
+  AppReportsRoute: AppReportsRoute,
+  AppSettingsRoute: AppSettingsRoute,
+  AppTasksRoute: AppTasksRoute,
+  AppIndexRoute: AppIndexRoute,
+  AppChatIdRoute: AppChatIdRoute,
+  AppChatIndexRoute: AppChatIndexRoute,
+}
+
+const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AboutRoute: AboutRoute,
+  AcceptableUseRoute: AcceptableUseRoute,
+  AppRoute: AppRouteWithChildren,
+  AuthRoute: AuthRoute,
+  ContactRoute: ContactRoute,
+  CookiesRoute: CookiesRoute,
+  DashboardRoute: DashboardRoute,
+  DpaRoute: DpaRoute,
+  FaqRoute: FaqRoute,
+  FeaturesRoute: FeaturesRoute,
+  HowItWorksRoute: HowItWorksRoute,
+  IntegrationsRoute: IntegrationsRoute,
+  OnboardingRoute: OnboardingRoute,
+  PricingRoute: PricingRoute,
+  PrivacyRoute: PrivacyRoute,
+  RefundsRoute: RefundsRoute,
+  SecurityRoute: SecurityRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
+  StoriesRoute: StoriesRoute,
+  SubprocessorsRoute: SubprocessorsRoute,
+  TermsRoute: TermsRoute,
+  ApiEmployeeStreamRoute: ApiEmployeeStreamRoute,
+  BlogSlugRoute: BlogSlugRoute,
+  EmployeesIdRoute: EmployeesIdRoute,
+  UseCasesIdRoute: UseCasesIdRoute,
+  BlogIndexRoute: BlogIndexRoute,
+  EmployeesIndexRoute: EmployeesIndexRoute,
+  UseCasesIndexRoute: UseCasesIndexRoute,
+  ApiPublicLearningCycleRoute: ApiPublicLearningCycleRoute,
+  ApiPublicMorningBriefingRoute: ApiPublicMorningBriefingRoute,
+  ApiPublicNourAutomationsRoute: ApiPublicNourAutomationsRoute,
+  ApiPublicNourWeeklyRoute: ApiPublicNourWeeklyRoute,
+  ApiPublicPipedreamWebhookRoute: ApiPublicPipedreamWebhookRoute,
+  ApiPublicProactiveRoute: ApiPublicProactiveRoute,
+  ApiPublicPxRoute: ApiPublicPxRoute,
+  ApiPublicSocialAutopilotRoute: ApiPublicSocialAutopilotRoute,
+  ApiPublicSocialQueueRoute: ApiPublicSocialQueueRoute,
+  ApiPublicTrackRoute: ApiPublicTrackRoute,
+  ApiPublicMetaCallbackRoute: ApiPublicMetaCallbackRoute,
+  ApiPublicTelegramWebhookRoute: ApiPublicTelegramWebhookRoute,
+  ApiPublicWhatsappWebhookRoute: ApiPublicWhatsappWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

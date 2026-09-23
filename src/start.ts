@@ -24,6 +24,16 @@ const csrfMiddleware = createCsrfMiddleware({
   filter: (ctx) => ctx.handlerType === "serverFn",
 });
 
+// Attaches the Supabase access token to every server-function call so
+// `requireSupabaseAuth` can identify the signed-in user.
+const attachSupabaseAuth = createMiddleware({ type: "function" }).client(async ({ next }) => {
+  const { supabase } = await import("@/integrations/supabase/client");
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  return next(token ? { headers: { Authorization: `Bearer ${token}` } } : {});
+});
+
 export const startInstance = createStart(() => ({
   requestMiddleware: [errorMiddleware, csrfMiddleware],
+  functionMiddleware: [attachSupabaseAuth],
 }));

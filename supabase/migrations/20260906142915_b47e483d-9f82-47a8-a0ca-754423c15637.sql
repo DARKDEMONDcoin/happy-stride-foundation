@@ -1,0 +1,2 @@
+ALTER TABLE public.pipedream_accounts ADD COLUMN page_id text, ADD COLUMN instagram_business_id text;
+CREATE INDEX pipedream_accounts_page_idx ON public.pipedream_accounts(workspace_id, provider, page_id);
