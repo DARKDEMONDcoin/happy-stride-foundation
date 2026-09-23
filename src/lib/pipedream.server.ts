@@ -298,6 +298,8 @@ export async function proxyRequest<T = unknown>(
     body?: unknown;
     /** جسم نصي جاهز (مثل form-urlencoded) بدلاً من JSON. */
     rawBody?: string;
+    /** جسم ثنائي (رفع صورة) يُمرَّر كما هو. */
+    binaryBody?: Uint8Array;
     headers?: Record<string, string>;
   },
 ): Promise<T> {
@@ -306,12 +308,14 @@ export async function proxyRequest<T = unknown>(
     external_user_id: externalUserId(params.workspaceId),
     account_id: params.accountId,
   });
-  const body =
-    params.rawBody !== undefined
-      ? params.rawBody
-      : params.body === undefined
-        ? undefined
-        : JSON.stringify(params.body);
+  const body: BodyInit | undefined =
+    params.binaryBody !== undefined
+      ? (params.binaryBody as unknown as BodyInit)
+      : params.rawBody !== undefined
+        ? params.rawBody
+        : params.body === undefined
+          ? undefined
+          : JSON.stringify(params.body);
   const method = params.method ?? "GET";
   const init = {
     method,

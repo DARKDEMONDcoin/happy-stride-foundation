@@ -56,18 +56,31 @@ export function ghostBase(apiUrl: string): string {
 }
 
 async function ghostFetch(config: GhostConfig, path: string, init?: RequestInit) {
-  const token = await ghostToken(config.adminKey);
-  const res = await fetch(`${ghostBase(config.apiUrl)}/ghost/api/admin${path}`, {
-    signal: AbortSignal.timeout(30_000),
-    ...init,
-    headers: {
-      Authorization: `Ghost ${token}`,
-      "Content-Type": "application/json",
-      Accept: "application/json",
-      "Accept-Version": "v5.0",
-      ...(init?.headers ?? {}),
-    },
-  });
+  // القراءات تُعاد عند الأعطال المؤقتة؛ الكتابة مرة واحدة كي لا يتكرر النشر.
+  const method = (init?.method ?? "GET").toUpperCase();
+  const attempts = method === "GET" ? 3 : 1;
+  let res: Response | undefined;
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    try {
+      const token = await ghostToken(config.adminKey);
+      res = await fetch(`${ghostBase(config.apiUrl)}/ghost/api/admin${path}`, {
+        signal: AbortSignal.timeout(30_000),
+        ...init,
+        headers: {
+          Authorization: `Ghost ${token}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          "Accept-Version": "v5.0",
+          ...(init?.headers ?? {}),
+        },
+      });
+      if (![429, 502, 503, 504].includes(res.status) || attempt === attempts - 1) break;
+    } catch (error) {
+      if (attempt === attempts - 1) throw error;
+    }
+    await new Promise((r) => setTimeout(r, 700 * 2 ** attempt + Math.floor(Math.random() * 250)));
+  }
+  if (!res) throw new Error("تعذّر الوصول إلى Ghost — أعد المحاولة بعد قليل.");
   const text = await res.text();
   if (!res.ok) {
     if (res.status === 401 || res.status === 403) {
