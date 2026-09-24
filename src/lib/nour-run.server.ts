@@ -538,7 +538,13 @@ export async function researchFor(
   if (!RESEARCH_EMPLOYEES.has(employeeId)) return { block: "", used: [] };
   if (!needsResearch(message)) return { block: "", used: [] };
   try {
-    const plan = await planResearch(apiKey, brand, message);
+    // تخطيط محلي فوري (بلا نداء نموذج كان يستهلك ١٠–١٥ ثانية قبل البحث).
+    // نداء النموذج يبقى احتياطاً فقط حين يعجز التخطيط المحلي عن استخراج أي شيء.
+    const local = localResearchPlan(brand, message);
+    const plan =
+      local.keywords?.length || local.urls?.length || local.useSearchConsole
+        ? local
+        : await planResearch(apiKey, brand, message);
     if (
       !plan.keywords?.length &&
       !plan.searches?.length &&
@@ -557,6 +563,47 @@ export async function researchFor(
     console.error("[nour] research failed:", error);
     return { block: "", used: [] };
   }
+}
+
+/** يستخرج خطة البحث من نص الطلب مباشرة في أقل من مللي ثانية. */
+function localResearchPlan(
+  brand: { name: string; industry: string },
+  message: string,
+): {
+  keywords: string[];
+  searches: string[];
+  urls: string[];
+  competitors: string[];
+  useSearchConsole: boolean;
+} {
+  const urls = (message.match(/https?:\/\/[^\s)"'<>،]+/g) ?? []).slice(0, 2);
+  const domains = (message.match(/\b[a-z0-9-]+\.(?:com|net|org|io|co|sa|ae|eg|store|shop)\b/gi) ?? [])
+    .filter((d) => !urls.some((u) => u.includes(d)))
+    .slice(0, 2);
+  const quoted = [...message.matchAll(/[«"“]([^»"”]{2,60})[»"”]/g)].map((m) => m[1]!.trim());
+  const topic = message
+    .replace(/https?:\/\/\S+/g, " ")
+    .replace(/[؟?!.,،:«»"“”()]/g, " ")
+    .replace(
+      /(?<=^|\s)(?:يا|نور|سراج|سِراج|ممكن|من فضلك|لو سمحت|عايز|عاوز|أريد|اريد|ابغى|اعمل|اكتب|اكتبلي|حلل|حلّل|لي|عن|في|على|من|إلى|الى|هل|ما|ايه|إيه|كيف|ازاي|مع|و|أو|او|ده|دي|هذا|هذه)(?=\s|$)/gu,
+      " ",
+    )
+    .replace(/\s+/g, " ")
+    .trim();
+  const seed = topic.split(" ").slice(0, 5).join(" ");
+  const keywords = [...new Set([...quoted, seed].filter((k) => k.length > 2))].slice(0, 3);
+  const searches = keywords.length
+    ? [keywords[0]!, `${keywords[0]} ${brand.industry}`.trim()].slice(0, 2)
+    : [];
+  return {
+    keywords,
+    searches,
+    urls,
+    competitors: domains,
+    useSearchConsole: /ترتيب|نقرات|ظهور|زيارات|ترافيك|أداء الموقع|اداء الموقع|search console|سيرش كونسول|impressions|clicks/i.test(
+      message,
+    ),
+  };
 }
 
 /** محادثة قصيرة/تحية لا تحتاج بحثاً ميدانياً — نرد فوراً. */
