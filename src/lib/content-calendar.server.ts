@@ -1,5 +1,6 @@
 import { GRAPH_BASE } from "./graph-version";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { BRAND_EMPLOYEE_IDS } from "./brand-context.server";
 
 import type { Database } from "@/integrations/supabase/types";
 import { ambientPulse, timezoneForCountry } from "./live-context.server";
@@ -714,7 +715,7 @@ export async function learnFromPerformance(
     title,
     meta: `تعلّم من الأداء · ${sample.length} منشوراً · ${new Date().toLocaleDateString("ar-EG")}`,
     body: summary,
-    used_by: ["sonny", "dana", "adam"],
+    used_by: [...BRAND_EMPLOYEE_IDS],
   };
   if (existing) await admin.from("brain_items").update(payload).eq("id", existing.id);
   else await admin.from("brain_items").insert(payload);
