@@ -111,7 +111,7 @@ async function askInstance(base: string, query: string, ms: number): Promise<Sea
  * بحث عبر مجمّع SearXNG: يجرّب دفعتين من النسخ بالتوازي وأول نتيجة حقيقية تفوز.
  * يعيد قائمة فارغة إن رفضت كل النسخ — بلا اختلاق نتائج.
  */
-export async function searxPoolSearch(query: string, budgetMs = 11_000): Promise<SearxRow[]> {
+export async function searxPoolSearch(query: string, budgetMs = 7_000): Promise<SearxRow[]> {
   const all = await loadRegistry();
   const now = Date.now();
   const fresh = (u: string) => now - (failedAt.get(u) ?? 0) > FAIL_TTL_MS;
@@ -123,7 +123,7 @@ export async function searxPoolSearch(query: string, budgetMs = 11_000): Promise
   ];
 
   const started = Date.now();
-  const batchSize = 10;
+  const batchSize = 14;
 
   for (let i = 0; i < candidates.length; i += batchSize) {
     const left = budgetMs - (Date.now() - started);
@@ -131,7 +131,7 @@ export async function searxPoolSearch(query: string, budgetMs = 11_000): Promise
     const batch = candidates.slice(i, i + batchSize);
     const tries = batch.map(async (base) => {
       try {
-        const rows = await askInstance(base, query, Math.min(left, 9_000));
+        const rows = await askInstance(base, query, Math.min(left, 5_000));
         if (!proven.includes(base)) proven.unshift(base);
         if (proven.length > 8) proven.length = 8;
         failedAt.delete(base);
