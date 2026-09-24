@@ -356,22 +356,6 @@ export async function employeeResearch(
 
   // كل ما هو نتائج مصنّفة يمر على الترجيح معاً: مصدر واحد قوي يتقدّم على عشرة ضعيفة.
   const all = chunks.flatMap((c) => c.findings ?? []);
-
-  /**
-   * Tavily احتياطي ذكي (رصيد محدود): فقط حين تكون أدلة الويب المجانية ضعيفة،
-   * أو حين يطلب السؤال حداثة لحظية ولم تأتِ نتائج حديثة كافية.
-   */
-  const webHits = all.filter((f) => f.kind !== "context").length;
-  const fresh = /(ترند|تريند|خبر|أخبار|اخبار|اليوم|الآن|حالياً|حاليا|أمس|هذا الأسبوع|سعر|أسعار|اسعار|news|today|latest|price)/i.test(seed);
-  const thisYear = all.filter((f) => (f.year ?? 0) >= year).length;
-  if (webHits < 5 || (fresh && thisYear < 2)) {
-    const { tavilySearch } = await import("./tavily.server");
-    const rows = await tavilySearch(context, { fresh, ms: 6_000 });
-    if (rows.length) {
-      all.push(...rows);
-      chunks.push({ part: "", used: "Tavily", findings: rows });
-    }
-  }
   // كلمات الموضوع نفسه (بالعربية وبمقابلها الإنجليزي) هي معيار القبول،
   // والقطاع والمدينة سياق يرفع الترتيب فقط — فلا تُقبل ورقة عن «المطاعم» كدليل على «التسعير».
   const coreTopic = `${seed} ${latinQuery(seed)}`;
