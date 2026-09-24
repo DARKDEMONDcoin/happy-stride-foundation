@@ -5,6 +5,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Database } from "@/integrations/supabase/types";
 import type { BusinessProfile } from "@/lib/business-profile.server";
+import { BRAND_EMPLOYEE_IDS } from "@/lib/brand-context.server";
 
 /**
  * تحليل موقع المستخدم وحفظ «ملف العلامة» في مساحة العمل وعقل العلامة،
@@ -87,17 +88,25 @@ async function saveProfile(
   ]
     .filter(Boolean)
     .join("\n");
-  await supabase
+  const { data: existing, error: existingError } = await supabase
     .from("brain_items")
-    .delete()
+    .select("id")
     .eq("workspace_id", workspaceId)
-    .eq("title", "ملف العلامة");
-  await supabase.from("brain_items").insert({
+    .eq("title", "ملف العلامة")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (existingError) throw new Error(existingError.message);
+  const payload = {
     workspace_id: workspaceId,
     kind: "note",
     title: "ملف العلامة",
     meta: `مستخرج تلقائياً من ${website ?? "الموقع"} · ${profile.pagesRead.length} صفحات`,
     body,
-    used_by: ["sonny", "eva", "sam", "nour", "dana", "adam"],
-  });
+    used_by: [...BRAND_EMPLOYEE_IDS],
+  };
+  const result = existing
+    ? await supabase.from("brain_items").update(payload).eq("id", existing.id).eq("workspace_id", workspaceId)
+    : await supabase.from("brain_items").insert(payload);
+  if (result.error) throw new Error(result.error.message);
 }

@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { BRAND_EMPLOYEE_IDS } from "./brand-context.server";
 import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -313,7 +314,7 @@ export const discoverBrand = createServerFn({ method: "POST" })
       ]
         .filter(Boolean)
         .join("\n"),
-      used_by: ["nour", "sonny", "eva"],
+      used_by: [...BRAND_EMPLOYEE_IDS],
     });
 
     return report;
