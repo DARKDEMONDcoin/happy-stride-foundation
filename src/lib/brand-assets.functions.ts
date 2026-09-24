@@ -12,8 +12,12 @@ export type StoredAsset = {
   kind: "image" | "video";
 };
 
-export type PublicAsset = StoredAsset & {
-  page_url: string;
+export type PublicAsset = {
+  url: string;
+  alt: string;
+  pageUrl: string;
+  weight: number;
+  kind: "image" | "video";
   license: string;
   creator: string;
 };

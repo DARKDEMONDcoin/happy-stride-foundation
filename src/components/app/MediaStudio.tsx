@@ -452,7 +452,7 @@ export function MediaStudio({
                           {added ? "مُرفقة ✓" : "أرفقها"}
                         </span>
                       </button>
-                      <a href={asset.page_url} target="_blank" rel="noreferrer" className="block truncate px-2 py-1 text-[0.58rem] text-muted-foreground underline" title={`${asset.creator} · ${asset.license}`}>
+                      <a href={asset.pageUrl} target="_blank" rel="noreferrer" className="block truncate px-2 py-1 text-[0.58rem] text-muted-foreground underline" title={`${asset.creator} · ${asset.license}`}>
                         المصدر · {asset.license}
                       </a>
                     </div>
