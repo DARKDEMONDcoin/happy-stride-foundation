@@ -144,6 +144,10 @@ export function MediaStudio({
 
   const attach = (url: string, type: "image" | "video") => {
     if (attachments.some((a) => a.url === url) || attachments.length >= MAX_ATTACHMENTS) return;
+    if (type === "video" && attachments.filter((a) => a.type === "video").length >= MAX_VIDEOS) {
+      setError(`الحد الأقصى ${MAX_VIDEOS} فيديوهات في الرسالة الواحدة.`);
+      return;
+    }
     onAttachmentsChange([...attachments, { url, type }]);
   };
 

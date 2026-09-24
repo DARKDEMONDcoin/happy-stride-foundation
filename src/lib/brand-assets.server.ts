@@ -26,6 +26,18 @@ export function normalizeUrl(raw: string): string | null {
     const withScheme = /^https?:\/\//i.test(value) ? value : `https://${value}`;
     const u = new URL(withScheme);
     if (!u.hostname.includes(".")) return null;
+    if (u.username || u.password || !["http:", "https:"].includes(u.protocol)) return null;
+    if (u.port && !["80", "443"].includes(u.port)) return null;
+    const host = u.hostname.toLowerCase().replace(/^\[|\]$/g, "");
+    if (
+      host === "localhost" ||
+      host.endsWith(".local") ||
+      host.endsWith(".internal") ||
+      /^(0|10|127|169\.254|192\.168)\./.test(host) ||
+      /^172\.(1[6-9]|2\d|3[01])\./.test(host) ||
+      /^(::1|fc|fd|fe80)/i.test(host)
+    )
+      return null;
     return u.toString();
   } catch {
     return null;
@@ -36,11 +48,22 @@ async function getHtml(url: string, timeoutMs = 12000): Promise<string | null> {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
-    const res = await fetch(url, {
-      headers: { "user-agent": UA, accept: "text/html,application/xhtml+xml" },
-      signal: ctrl.signal,
-      redirect: "follow",
-    });
+    let current = normalizeUrl(url);
+    if (!current) return null;
+    let res: Response | null = null;
+    for (let hop = 0; hop < 4; hop += 1) {
+      res = await fetch(current, {
+        headers: { "user-agent": UA, accept: "text/html,application/xhtml+xml" },
+        signal: ctrl.signal,
+        redirect: "manual",
+      });
+      if (![301, 302, 303, 307, 308].includes(res.status)) break;
+      const location = res.headers.get("location");
+      if (!location) return null;
+      current = normalizeUrl(new URL(location, current).toString());
+      if (!current) return null;
+    }
+    if (!res) return null;
     if (!res.ok) return null;
     const type = res.headers.get("content-type") ?? "";
     if (!type.includes("html")) return null;

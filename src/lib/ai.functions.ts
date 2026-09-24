@@ -1371,7 +1371,7 @@ export async function runEmployeeTurn(
 
     // صور من موقع المستخدم: اختيارية تماماً — تظهر فقط حين يطلبها في رسالته.
     const wantsSiteImages =
-      /(صور|صورة|صور\s*من)\s*(من\s*)?(موقعي|الموقع|موقعنا)|صور\s+موقع|من\s+صور\s+موقعي|استخدم\s+صور\s+موقع/u.test(
+      /(?=.*(?:موقعي|الموقع|موقعنا|website|site))(?=.*(?:صور?|فيديوهات?|image|photo|video))|(?:صور|فيديوهات?)\s+موقع|(?:من|استخدم)\s+(?:صور|فيديوهات?)\s+(?:من\s+)?موقعي/iu.test(
         data.message ?? "",
       );
     let siteSuggestions: { url: string; alt: string; pageUrl: string }[] = [];
@@ -1379,7 +1379,7 @@ export async function runEmployeeTurn(
       try {
         const { data: stored } = await supabase
           .from("site_assets")
-          .select("url, alt, page_url, weight")
+          .select("url, alt, page_url, weight, kind")
           .eq("workspace_id", data.workspaceId)
           .order("weight", { ascending: false })
           .limit(120);
@@ -1389,6 +1389,7 @@ export async function runEmployeeTurn(
           alt: a.alt ?? "",
           pageUrl: a.page_url ?? "",
           weight: a.weight ?? 0,
+          kind: a.kind === "video" ? ("video" as const) : ("image" as const),
         }));
 
         // أول مرة: نلتقط صور الموقع الآن ثم نحفظها للمرات القادمة.
@@ -1413,6 +1414,7 @@ export async function runEmployeeTurn(
               alt: a.alt,
               pageUrl: a.pageUrl,
               weight: a.weight,
+              kind: a.kind,
             }));
           }
         }
