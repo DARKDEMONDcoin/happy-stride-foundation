@@ -352,18 +352,47 @@ export async function employeeResearch(
     });
   }
 
+  /**
+   * Tavily بحصة محدودة: يُسابق مع البقية فوراً فقط حين يكون السؤال لحظياً/مالياً
+   * (حيث المصادر المجانية أضعف)، وإلا يُستدعى بعدها احتياطياً إن جاءت الأدلة ضعيفة.
+   */
+  const { tavilySearch, tavilyAvailable } = await import("./tavily.server");
+  const tq = context;
+  const hot = /(سعر|أسعار|اسعار|تكلفة|خبر|أخبار|اخبار|ترند|تريند|اليوم|الآن|حالياً|حاليا|منافس|price|news|trend|latest)/i.test(seed);
+  let tavilyUsed = false;
+  if (hot && tavilyAvailable()) {
+    tavilyUsed = true;
+    jobs.unshift(async (): Promise<Chunk | null> => {
+      const rows = await tavilySearch(tq, { news: /(خبر|أخبار|اخبار|اليوم|news)/i.test(seed) });
+      return rows.length ? { part: "", used: "Tavily", findings: rows } : null;
+    });
+  }
+
   const chunks = await raceSources(jobs, budgetMs);
 
-  // كل ما هو نتائج مصنّفة يمر على الترجيح معاً: مصدر واحد قوي يتقدّم على عشرة ضعيفة.
-  const all = chunks.flatMap((c) => c.findings ?? []);
   // كلمات الموضوع نفسه (بالعربية وبمقابلها الإنجليزي) هي معيار القبول،
   // والقطاع والمدينة سياق يرفع الترتيب فقط — فلا تُقبل ورقة عن «المطاعم» كدليل على «التسعير».
   const coreTopic = `${seed} ${latinQuery(seed)}`;
   const auxTopic = `${opts.industry ?? ""} ${opts.city ?? ""} ${latinQuery(opts.industry ?? "")}`;
-  const ranked = rankFindings(
-    all.filter((f) => f.kind !== "context"),
-    { topic: coreTopic, aux: auxTopic, max: 14 },
-  );
+  const rankOf = (list: Finding[]) =>
+    rankFindings(
+      list.filter((f) => f.kind !== "context"),
+      { topic: coreTopic, aux: auxTopic, max: 14 },
+    );
+  // كل ما هو نتائج مصنّفة يمر على الترجيح معاً: مصدر واحد قوي يتقدّم على عشرة ضعيفة.
+  let all = chunks.flatMap((c) => c.findings ?? []);
+  let ranked = rankOf(all);
+
+  // احتياطي: أدلة قليلة أو بلا أي تأكيد متقاطع ← طلب Tavily واحد يسد الفجوة.
+  const weak = ranked.length < 5 || !ranked.some((r) => r.corroborated);
+  if (!tavilyUsed && weak && tavilyAvailable()) {
+    const rows = await tavilySearch(tq, { timeoutMs: 6_000 });
+    if (rows.length) {
+      chunks.push({ part: "", used: "Tavily", findings: rows });
+      all = [...all, ...rows];
+      ranked = rankOf(all);
+    }
+  }
   const backdrop = rankFindings(
     all.filter((f) => f.kind === "context"),
     { max: 8 },
