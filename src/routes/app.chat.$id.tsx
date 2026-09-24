@@ -58,6 +58,7 @@ import { saveChatSignal } from "@/lib/learning.functions";
 import { SkillPalette } from "@/components/app/SkillPalette";
 import { Thinking } from "@/components/app/Thinking";
 import { Markdown } from "@/components/app/Markdown";
+import { ChatAttachments, splitUserBody } from "@/components/app/ChatAttachments";
 import { PostCards } from "@/components/app/PostCards";
 import { requestedPublishTargets } from "@/lib/platforms";
 import { askedForPublishableOutput, extractPostText, isNonPostReply } from "@/lib/post-format";
@@ -966,7 +967,7 @@ function ChatView({
     let last = "";
     return (messages ?? []).map((message) => {
       const before = last;
-      if (message.role === "user") last = message.body;
+      if (message.role === "user") last = splitUserBody(message.body).text || message.body;
       return before;
     });
   }, [messages]);
@@ -1258,7 +1259,20 @@ function ChatView({
                         )}
                       >
                         {isUser ? (
-                          <p dir="auto">{m.body}</p>
+                          (() => {
+                            const parsed = splitUserBody(m.body);
+                            return (
+                              <>
+                                {parsed.items.length ? (
+                                  <ChatAttachments
+                                    items={parsed.items}
+                                    className={parsed.text ? "mb-2" : undefined}
+                                  />
+                                ) : null}
+                                {parsed.text ? <p dir="auto">{parsed.text}</p> : null}
+                              </>
+                            );
+                          })()
                         ) : (
                           <Markdown body={body} onOpenApp={openAppInChat} />
                         )}
@@ -1297,7 +1311,7 @@ function ChatView({
                         ) : null}
 
                         {(() => {
-                          const req = isUser ? m.body : priorRequest;
+                          const req = isUser ? splitUserBody(m.body).text || m.body : priorRequest;
                           const handoff = detectHandoff(req, id);
                           if (!handoff) return null;
                           // تظهر مرة واحدة: مع رسالة المستخدم مباشرة إن كانت آخر رسالة،
@@ -1357,6 +1371,9 @@ function ChatView({
             {pending ? (
               <div className="flex justify-start gap-3 animate-bubble-in">
                 <div className="bubble-user min-w-0 max-w-[min(46rem,88%)] rounded-3xl rounded-ss-lg px-5 py-3.5 leading-relaxed text-background shadow-card">
+                  {attachments.length ? (
+                    <ChatAttachments items={attachments} className="mb-2" />
+                  ) : null}
                   <p dir="auto" className="whitespace-pre-wrap">
                     {pending}
                   </p>
@@ -1493,8 +1510,23 @@ function ChatView({
           ) : null}
 
           <div className="chat-composer-dock pointer-events-none p-3 sm:p-5">
+            {attachments.length && activeTool !== "media" && !busy ? (
+              <div className="pointer-events-auto mb-2 rounded-2xl border border-border/70 bg-card p-2 shadow-sm">
+                <ChatAttachments
+                  compact
+                  items={attachments}
+                  onRemove={(url) => setAttachments((list) => list.filter((a) => a.url !== url))}
+                />
+              </div>
+            ) : null}
             <PromptInput
-              onSubmit={(message) => submit(message.text || draft)}
+              onSubmit={(message) =>
+                submit(
+                  message.text ||
+                    draft ||
+                    (attachments.length ? "راجع المرفقات دي وقولي رأيك فيها." : ""),
+                )
+              }
               className="chat-composer pointer-events-auto mx-auto w-full max-w-none rounded-2xl border border-border/70 p-2 transition-all focus-within:border-primary/55 focus-within:ring-4 focus-within:ring-primary/10"
             >
               <PromptInputTextarea

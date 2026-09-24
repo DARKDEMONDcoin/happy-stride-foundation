@@ -351,13 +351,16 @@ export async function runEmployeeTurn(
 
     // وسائط المستخدم تُحفظ داخل نص رسالته لتظهر في المحادثة وتبقى في السجل.
     const attachments = data.attachments ?? [];
+    // الأسماء تُنظَّف من الأقواس وفواصل الأسطر حتى لا تنكسر صيغة المرفق عند عرضه.
+    const safeAlt = (alt: string | undefined, fallback: string) =>
+      (alt ?? "").replace(/[[\]()\n\r]/g, " ").trim() || fallback;
     const attachmentsMarkdown = attachments
       .map((a) =>
         a.type === "video"
-          ? `\n\n🎬 [${a.alt ?? "فيديو مرفق"}](${a.url})`
+          ? `\n\n🎬 [${safeAlt(a.alt, "فيديو مرفق")}](${a.url})`
           : a.type === "file"
-            ? `\n\n📎 [${a.alt ?? "ملف مرفق"}](${a.url})`
-            : `\n\n![${a.alt ?? "صورة مرفقة"}](${a.url})`,
+            ? `\n\n📎 [${safeAlt(a.alt, "ملف مرفق")}](${a.url})`
+            : `\n\n![${safeAlt(a.alt, "صورة مرفقة")}](${a.url})`,
       )
       .join("");
 
