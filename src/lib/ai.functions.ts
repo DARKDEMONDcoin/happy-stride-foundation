@@ -470,6 +470,15 @@ export async function runEmployeeTurn(
     const { researchIntent } = await import("./research-intent");
     const wantsResearch = researchIntent(data.message);
 
+    // «هات صورة من النت»: نجلب صوراً حقيقية بالتوازي مع البحث بدل توليد صورة.
+    const webImageMod = await import("./web-images.server");
+    const wantsWeb =
+      !imageRefused && data.imageMode !== "off" && webImageMod.wantsWebImage(data.message);
+    if (wantsWeb) emit({ type: "step", label: "أبحث عن صور حقيقية على الإنترنت" });
+    const webImagesTask = wantsWeb
+      ? webImageMod.webImageSearch(data.message, 4).catch(() => [])
+      : Promise.resolve([] as Awaited<ReturnType<typeof webImageMod.webImageSearch>>);
+
     emit({ type: "step", label: `أجمع أدلة وأرقاماً حقيقية عن «${turnTopic}»` });
     const [research, liveBlock, ownFieldResearch] = await Promise.all([
       researchFor(
@@ -479,10 +488,10 @@ export async function runEmployeeTurn(
         data.message,
         data.workspaceId,
         // الطلبات الكبيرة تستحق أدلة أكمل (مقاييس + نتائج بحث + موجز منافسين).
-        longForm ? 22_000 : 12_000,
+        longForm ? 15_000 : 8_000,
       ),
       needsLiveFacts(data.message)
-        ? liveFactsBlock(data.message, 20_000, {
+        ? liveFactsBlock(data.message, longForm ? 12_000 : 9_000, {
             country: ws.country,
             city: (ws as { city?: string | null }).city ?? null,
             timeZone: timezone,
@@ -495,7 +504,7 @@ export async function runEmployeeTurn(
               industry: workspace.industry,
               city: (ws as { city?: string | null }).city ?? undefined,
               country: ws.country ?? undefined,
-              budgetMs: longForm ? 18_000 : 12_000,
+              budgetMs: longForm ? 12_000 : 8_000,
             };
             // بحث عميق: جولات متتابعة تقرأ داخل الصفحات وتستخرج الأرقام بمصادرها.
             // يُشغَّل حين يطلبه المستخدم صراحةً أو حين يكون المطلوب تقريراً/دراسة.
@@ -503,7 +512,7 @@ export async function runEmployeeTurn(
               const m = await import("./deep-research.server");
               return m.deepResearch(data.employeeId, wantsResearch.topic, {
                 ...opts,
-                deepBudgetMs: 50_000,
+                deepBudgetMs: 35_000,
               });
             }
             const m = await import("./employee-research.server");
@@ -1167,19 +1176,18 @@ export async function runEmployeeTurn(
     // والمستخدم هو صاحب القرار: إيقاف · تلقائي · وصف يكتبه بنفسه (يُترجم حرفياً بلا إضافة).
     const imageMode = data.imageMode ?? "auto";
     const userImagePrompt = data.imagePrompt?.trim() ?? "";
+    const webImages = await webImagesTask;
     const wantsImage =
-      imageMode === "manual"
+      webImages.length === 0 &&
+      (imageMode === "manual"
         ? userImagePrompt.length > 2
         : imageMode !== "off" &&
           intent === "work" &&
           !imageRefused &&
           // لا توليد تلقائي أبداً: الصورة تُنتَج فقط حين يطلبها المستخدم صراحةً.
-          // كان الموظفون البصريون يولّدون صوراً بلا طلب فيهدرون وقتاً وتكلفة
-          // ويُرفقون صوراً لم يُردها أحد.
           explicitImage &&
-          attachments.every((a) => a.type !== "image");
-    // توليد الصورة يبدأ الآن ويسير بالتوازي مع مراجعة الجودة — كانا متسلسلين فيضيفان
-    // نحو دقيقة كاملة على كل رد بصري.
+          attachments.every((a) => a.type !== "image"));
+    // توليد الصورة يبدأ الآن ويسير بالتوازي مع مراجعة الجودة.
     const imageTask: Promise<string | null> = !wantsImage
       ? Promise.resolve(null)
       : (async (): Promise<string | null> => {
@@ -1344,9 +1352,15 @@ export async function runEmployeeTurn(
     const footers = toolBlocks.map((t) => t.footer).filter(Boolean);
     if (footers.length) reply = `${reply.trim()}\n\n> ${footers.join(" · ")}`;
 
-    if (imageUrl) {
+    if (webImages.length) {
+      const list = webImages
+        .map((img) => `![${img.title.replace(/[[\]]/g, "")}](${img.url})\n[المصدر: ${img.source}](${img.page})`)
+        .join("\n\n");
+      reply = `${reply.trim()}\n\n**صور حقيقية من الإنترنت:**\n\n${list}`;
+    } else if (imageUrl) {
       const alt = (deliverables[0]?.title ?? "الصورة المولّدة").slice(0, 120);
-      reply = `${reply.trim()}\n\n![${alt}](${imageUrl})`;
+      const note = wantsWeb ? "\n\n> لم أجد صورة حقيقية مناسبة على الإنترنت، فولّدت لك صورة بدلاً منها." : "";
+      reply = `${reply.trim()}${note}\n\n![${alt}](${imageUrl})`;
     } else if (explicitImage) {
       // طلب صورة صريح ولم ينجح التوليد: نصرّح بذلك بدل ترك المستخدم مع وصف نصي فقط.
       reply = `${reply.trim()}\n\n> تعذّر توليد الصورة الآن. أعد الطلب بعد لحظات أو اكتب وصف الصورة بنفسك من زر الصورة في مربع الإرسال.`;
