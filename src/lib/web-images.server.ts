@@ -109,9 +109,22 @@ async function isImage(url: string, ms = 5000): Promise<boolean> {
   }
 }
 
+/** ضمائر الإحالة: الموضوع مذكور في رسالة سابقة لا في هذه. */
+const REFERENCE_RE =
+  /(^|\s)(له|لها|ليه|ليها|لهم|عنه|عنها|ده|دي|دا|هذا|هذه|هذي|الموضوع|المنتج|الخبر|it|this|that)(?=\s|$)/iu;
+
 /** يجلب حتى `max` صور حقيقية متحقَّق منها عن الموضوع، خلال ~٩ ثوانٍ. */
-export async function webImageSearch(message: string, max = 4): Promise<WebImage[]> {
-  const topic = imageQuery(message) || message.slice(0, 80);
+export async function webImageSearch(
+  message: string,
+  max = 4,
+  previousMessage = "",
+): Promise<WebImage[]> {
+  let topic = imageQuery(message);
+  const stripped = topic.replace(REFERENCE_RE, " ").replace(/\s+/g, " ").trim();
+  if (previousMessage && (stripped.length < 3 || (REFERENCE_RE.test(topic) && stripped.length < 12))) {
+    topic = `${stripped} ${imageQuery(previousMessage) || previousMessage.slice(0, 80)}`.trim();
+  }
+  topic = topic || message.slice(0, 80);
   const latin = latinQuery(topic);
   const en = latin && latin !== topic ? latin : topic;
   const lists = await Promise.all([

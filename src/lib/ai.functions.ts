@@ -475,8 +475,11 @@ export async function runEmployeeTurn(
     const wantsWeb =
       !imageRefused && data.imageMode !== "off" && webImageMod.wantsWebImage(data.message);
     if (wantsWeb) emit({ type: "step", label: "أبحث عن صور حقيقية على الإنترنت" });
+    // سياق الإحالة: «هات صورة له/ليها/للموضوع ده» تعود لآخر رسالة من المستخدم.
+    const lastUserTopic =
+      (history ?? []).find((m) => m.role === "user" && m.body && m.body !== data.message)?.body ?? "";
     const webImagesTask = wantsWeb
-      ? webImageMod.webImageSearch(data.message, 4).catch(() => [])
+      ? webImageMod.webImageSearch(data.message, 4, lastUserTopic).catch(() => [])
       : Promise.resolve([] as Awaited<ReturnType<typeof webImageMod.webImageSearch>>);
 
     emit({ type: "step", label: `أجمع أدلة وأرقاماً حقيقية عن «${turnTopic}»` });
