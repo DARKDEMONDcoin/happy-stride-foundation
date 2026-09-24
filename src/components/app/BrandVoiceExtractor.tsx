@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { extractBrandVoice } from "@/lib/brand-voice.functions";
 import type { BrandVoiceResult } from "@/lib/brand-voice.server";
 import { cn } from "@/lib/utils";
+import { useBrainItems } from "@/lib/data";
 
 const dialectAr: Record<string, string> = {
   egyptian: "مصرية",
@@ -48,6 +49,8 @@ export function BrandVoiceExtractor({
   const [url, setUrl] = useState("");
   const [samples, setSamples] = useState("");
   const [result, setResult] = useState<BrandVoiceResult | null>(null);
+  const { data: brainItems } = useBrainItems(workspaceId);
+  const savedGuide = (brainItems ?? []).find((item) => item.title === "دليل صوت العلامة");
 
   const extract = useMutation({
     mutationFn: async () => {
@@ -157,6 +160,20 @@ export function BrandVoiceExtractor({
           )}
         </button>
       </form>
+
+      {!result && savedGuide ? (
+        <div className="mt-4 rounded-2xl border border-border bg-secondary/50 p-4">
+          <p className="flex items-center gap-2 text-sm font-black text-jade">
+            <Check className="size-4" /> دليل الصوت محفوظ ويعمل الآن
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">{savedGuide.meta}</p>
+          {!compact ? (
+            <p className="mt-3 line-clamp-4 whitespace-pre-line text-sm leading-relaxed text-ink-soft">
+              {savedGuide.body}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
 
       {result && p && s ? (
         <div className="mt-6 space-y-5 border-t border-border/70 pt-5">

@@ -9,6 +9,7 @@ import { parseHTML } from "linkedom";
 
 import { normalizeArabic } from "./memory.server";
 import { blockAwareText, extractArticle } from "./readability.server";
+import { normalizeUrl as normalizePublicUrl } from "./brand-assets.server";
 
 const UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36 SahlBot/1.0";
@@ -61,11 +62,22 @@ export type BrandVoiceResult = {
 
 async function fetchHtml(url: string): Promise<string | null> {
   try {
-    const res = await fetch(url, {
-      headers: { "User-Agent": UA, "Accept-Language": "ar,en;q=0.7", Accept: "text/html,*/*" },
-      signal: timeout(9000),
-      redirect: "follow",
-    });
+    let current = normalizePublicUrl(url);
+    if (!current) return null;
+    let res: Response | null = null;
+    for (let hop = 0; hop < 4; hop += 1) {
+      res = await fetch(current, {
+        headers: { "User-Agent": UA, "Accept-Language": "ar,en;q=0.7", Accept: "text/html,*/*" },
+        signal: timeout(9000),
+        redirect: "manual",
+      });
+      if (![301, 302, 303, 307, 308].includes(res.status)) break;
+      const location = res.headers.get("location");
+      if (!location) return null;
+      current = normalizePublicUrl(new URL(location, current).toString());
+      if (!current) return null;
+    }
+    if (!res) return null;
     if (!res.ok) return null;
     const type = res.headers.get("content-type") ?? "";
     if (type && !type.includes("html")) return null;
@@ -76,9 +88,7 @@ async function fetchHtml(url: string): Promise<string | null> {
 }
 
 function normalizeUrl(raw: string): string {
-  const t = raw.trim();
-  if (!t) return "";
-  return /^https?:\/\//i.test(t) ? t : `https://${t}`;
+  return normalizePublicUrl(raw) ?? "";
 }
 
 /** روابط داخلية واعدة (عنّا، خدمات، مدونة…) لتمثيل صوت العلامة بأمانة. */
@@ -176,6 +186,7 @@ export async function collectSiteText(
   rawUrl: string,
 ): Promise<{ urls: string[]; text: string; headings: string[]; taglines: string[] }> {
   const home = normalizeUrl(rawUrl);
+  if (!home) return { urls: [], text: "", headings: [], taglines: [] };
   const homeHtml = await fetchHtml(home);
   if (!homeHtml) {
     const rendered = await fetchRenderedText(home);

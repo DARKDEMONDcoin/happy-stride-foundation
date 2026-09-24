@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Plus, FileText, Link2, StickyNote, Images, Search, Trash2, Loader2 } from "lucide-react";
+import { Plus, FileText, Link2, StickyNote, Images, Search, Trash2, Loader2, Pencil, X } from "lucide-react";
+import { toast } from "sonner";
 
 import { AppShell } from "@/components/app/AppShell";
 import { BrandVoiceExtractor } from "@/components/app/BrandVoiceExtractor";
 import { BusinessProfileCard } from "@/components/app/BusinessProfileCard";
 import { getMember } from "@/data/team";
 import { brainKindLabel } from "@/data/app";
-import { useAddBrainItem, useBrainItems, useDeleteBrainItem, useWorkspace } from "@/lib/data";
+import { useBrainItems, useDeleteBrainItem, useSaveBrandKnowledge, useUpdateBrainItem, useWorkspace } from "@/lib/data";
 import { cn } from "@/lib/utils";
 import { Portrait } from "@/components/site/Portrait";
 import { BrandLoader } from "@/components/site/BrandLoader";
@@ -37,14 +38,18 @@ function BrainPage() {
   const [query, setQuery] = useState("");
   const [kind, setKind] = useState<string>("all");
   const [open, setOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const { data: workspace } = useWorkspace();
   const { data: items, isLoading } = useBrainItems(workspace?.id);
-  const add = useAddBrainItem(workspace?.id);
+  const add = useSaveBrandKnowledge(workspace?.id);
+  const update = useUpdateBrainItem(workspace?.id);
   const del = useDeleteBrainItem(workspace?.id);
 
-  const list = (items ?? []).filter(
-    (i) => (kind === "all" || i.kind === kind) && i.title.includes(query.trim()),
-  );
+  const normalizedQuery = query.trim().toLocaleLowerCase("ar");
+  const list = (items ?? []).filter((i) => {
+    const searchable = [i.title, i.body, i.kind, i.meta].filter(Boolean).join(" ").toLocaleLowerCase("ar");
+    return (kind === "all" || i.kind === kind) && (!normalizedQuery || searchable.includes(normalizedQuery));
+  });
   const filled = new Set((items ?? []).map((i) => i.kind)).size;
 
   return (
@@ -110,12 +115,17 @@ function BrainPage() {
               e.preventDefault();
               const f = new FormData(e.currentTarget);
               const form = e.currentTarget;
-              await add.mutateAsync({
-                kind: String(f.get("kind")),
-                title: String(f.get("title")),
-                body: String(f.get("body")),
-                meta: `${brainKindLabel[String(f.get("kind")) as keyof typeof brainKindLabel]} · أضيف يدوياً`,
-              });
+               try {
+                 await add.mutateAsync({
+                   kind: String(f.get("kind")) as "note" | "link",
+                   title: String(f.get("title")),
+                   value: String(f.get("body")),
+                 });
+                 toast.success("حُفظت المعرفة وأصبحت متاحة للموظفين الستة.");
+               } catch (error) {
+                 toast.error(error instanceof Error ? error.message : "تعذّر حفظ المعرفة");
+                 return;
+               }
               form.reset();
               setOpen(false);
             }}
@@ -127,9 +137,7 @@ function BrainPage() {
                 className="rounded-2xl border border-border px-4 py-3 outline-none focus:border-jade"
               >
                 <option value="note">ملاحظة</option>
-                <option value="doc">مستند</option>
                 <option value="link">رابط</option>
-                <option value="image">صورة</option>
               </select>
               <input
                 name="title"
@@ -141,7 +149,7 @@ function BrainPage() {
             <textarea
               name="body"
               required
-              placeholder="اكتب المحتوى الذي سيقرأه فريقك…"
+              placeholder="اكتب المعلومة، أو ضع الرابط إذا اخترت رابطاً…"
               className="min-h-28 w-full resize-none rounded-2xl border border-border px-4 py-3 outline-none focus:border-jade"
             />
             <button
@@ -161,6 +169,7 @@ function BrainPage() {
             <ul className="mt-5 space-y-3">
               {list.map((item) => {
                 const Icon = kindIcon[item.kind] ?? StickyNote;
+                const editing = editingId === item.id;
                 return (
                   <li
                     key={item.id}
@@ -169,12 +178,34 @@ function BrainPage() {
                     <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-secondary text-primary">
                       <Icon className="size-5" />
                     </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate font-bold">{item.title}</span>
-                      <span className="block truncate text-xs text-muted-foreground">
-                        {item.meta ?? item.body}
+                    {editing ? (
+                      <form
+                        className="grid min-w-0 flex-1 gap-2"
+                        onSubmit={async (event) => {
+                          event.preventDefault();
+                          const form = new FormData(event.currentTarget);
+                          try {
+                            await update.mutateAsync({ id: item.id, title: String(form.get("title")), body: String(form.get("body")) });
+                            setEditingId(null);
+                            toast.success("تم تحديث المعرفة.");
+                          } catch (error) {
+                            toast.error(error instanceof Error ? error.message : "تعذّر التحديث");
+                          }
+                        }}
+                      >
+                        <input name="title" required defaultValue={item.title} className="rounded-xl border border-border px-3 py-2 text-sm outline-none focus:border-primary" />
+                        <textarea name="body" required defaultValue={item.body ?? ""} className="min-h-24 resize-y rounded-xl border border-border px-3 py-2 text-sm outline-none focus:border-primary" />
+                        <div className="flex gap-2">
+                          <button type="submit" disabled={update.isPending} className="rounded-full bg-foreground px-4 py-2 text-xs font-bold text-background disabled:opacity-50">حفظ</button>
+                          <button type="button" onClick={() => setEditingId(null)} className="grid size-8 place-items-center rounded-full border border-border" aria-label="إلغاء التعديل"><X className="size-4" /></button>
+                        </div>
+                      </form>
+                    ) : (
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate font-bold">{item.title}</span>
+                        <span className="block truncate text-xs text-muted-foreground">{item.meta ?? item.body}</span>
                       </span>
-                    </span>
+                    )}
                     <span className="flex -space-x-2 space-x-reverse">
                       {item.used_by.map((uid) => {
                         const m = getMember(uid);
@@ -191,6 +222,7 @@ function BrainPage() {
                         );
                       })}
                     </span>
+                    {!editing ? <button type="button" onClick={() => setEditingId(item.id)} className="grid size-9 shrink-0 place-items-center rounded-xl text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground" aria-label="تعديل"><Pencil className="size-4" /></button> : null}
                     <button
                       onClick={() => del.mutate(item.id)}
                       className="grid size-9 shrink-0 place-items-center rounded-xl text-muted-foreground transition-colors hover:bg-secondary hover:text-coral"

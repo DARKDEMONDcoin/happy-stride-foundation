@@ -9,6 +9,7 @@ import type { Database } from "@/integrations/supabase/types";
 import { PUBLISHABLE, providerLabel, requestedPublishTargets } from "./platforms";
 import { adaptForProvider, sanitizePostBody } from "./post-format";
 import { liveFactsBlock, needsLiveFacts, timezoneForCountry } from "./live-context.server";
+import { buildBrandContext } from "./brand-context.server";
 
 type Admin = SupabaseClient<Database>;
 
@@ -126,27 +127,18 @@ async function draftPost(
   const [{ data: ws }, { data: brain }] = await Promise.all([
     admin
       .from("workspaces")
-      .select("name, industry, tone, banned_words, country, website")
+      .select("name, industry, tone, banned_words, country, website, profile")
       .eq("id", workspaceId)
       .maybeSingle(),
     admin
       .from("brain_items")
-      .select("title, body")
+      .select("title, body, kind")
       .eq("workspace_id", workspaceId)
       .order("created_at", { ascending: false })
       .limit(8),
   ]);
 
-  const brand = [
-    ws?.name ? `اسم العلامة: ${ws.name}` : "",
-    ws?.industry ? `المجال: ${ws.industry}` : "",
-    ws?.tone ? `النبرة: ${ws.tone}` : "",
-    ws?.country ? `السوق: ${ws.country}` : "",
-    ws?.banned_words?.length ? `كلمات ممنوعة: ${ws.banned_words.join("، ")}` : "",
-    (brain ?? []).map((b) => `- ${b.title}: ${(b.body ?? "").slice(0, 200)}`).join("\n"),
-  ]
-    .filter(Boolean)
-    .join("\n");
+  const brand = buildBrandContext(ws ?? {}, brain ?? [], request, 10);
 
   const timeZone = timezoneForCountry(ws?.country);
   const liveFacts = needsLiveFacts(request)
@@ -157,7 +149,7 @@ async function draftPost(
     "اكتب منشوراً واحداً جاهزاً للنشر فقط: بلا مقدمات، بلا شرح، بلا Markdown، بلا عناوين أقسام، بلا خيارات متعددة.",
     "ابدأ بهوك قوي، اجعل النص قصيراً ومقروءاً، أضف دعوة فعل واضحة، ثم ٣–٥ هاشتاجات عربية مناسبة في السطر الأخير.",
     "لا تخترع أرقاماً ولا عروضاً لم يذكرها صاحب العمل.",
-    brand ? `سياق العلامة:\n${brand}` : "",
+    brand,
     liveFacts,
   ]
     .filter(Boolean)

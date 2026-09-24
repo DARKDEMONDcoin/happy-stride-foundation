@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { telegramStatus } from "@/lib/telegram.functions";
+import { saveBrandKnowledge } from "@/lib/brand-knowledge.functions";
 
 export type Workspace = Tables<"workspaces">;
 export type Profile = Tables<"profiles">;
@@ -330,11 +331,42 @@ export function useAddBrainItem(workspaceId?: string) {
   });
 }
 
+export function useSaveBrandKnowledge(workspaceId?: string) {
+  const qc = useQueryClient();
+  const save = useServerFn(saveBrandKnowledge);
+  return useMutation({
+    mutationFn: (item: { kind: "note" | "link"; value: string; title?: string }) => {
+      if (!workspaceId) throw new Error("مساحة العمل غير جاهزة بعد.");
+      return save({ data: { workspaceId, ...item } });
+    },
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["brain", workspaceId] }),
+  });
+}
+
+export function useUpdateBrainItem(workspaceId?: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, title, body }: { id: string; title: string; body: string }) => {
+      const { error } = await supabase
+        .from("brain_items")
+        .update({ title: title.trim(), body: body.trim() })
+        .eq("id", id)
+        .eq("workspace_id", workspaceId!);
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["brain", workspaceId] }),
+  });
+}
+
 export function useDeleteBrainItem(workspaceId?: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("brain_items").delete().eq("id", id);
+      const { error } = await supabase
+        .from("brain_items")
+        .delete()
+        .eq("id", id)
+        .eq("workspace_id", workspaceId!);
       if (error) throw new Error(error.message);
     },
     onSuccess: () => {
