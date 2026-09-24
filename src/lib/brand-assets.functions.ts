@@ -9,6 +9,7 @@ export type StoredAsset = {
   alt: string | null;
   page_url: string | null;
   weight: number;
+  kind: "image" | "video";
 };
 
 const syncSchema = z.object({
@@ -31,11 +32,11 @@ export const syncSiteAssets = createServerFn({ method: "POST" })
     const target = data.url?.trim() || ws?.website || "";
     if (!target) return { ok: false as const, reason: "no-website" as const, count: 0 };
 
-    const { harvestSiteImages, normalizeUrl } = await import("./brand-assets.server");
+    const { harvestSiteAssets, normalizeUrl } = await import("./brand-assets.server");
     const site = normalizeUrl(target);
     if (!site) return { ok: false as const, reason: "bad-url" as const, count: 0 };
 
-    const found = await harvestSiteImages(site, 12);
+    const found = await harvestSiteAssets(site, 16);
     if (found.length) {
       await supabase.from("site_assets").upsert(
         found.map((a) => ({
@@ -45,7 +46,7 @@ export const syncSiteAssets = createServerFn({ method: "POST" })
           alt: a.alt || null,
           weight: a.weight,
           source: "website",
-          kind: "image",
+          kind: a.kind,
         })),
         { onConflict: "workspace_id,url" },
       );
@@ -61,6 +62,7 @@ const listSchema = z.object({
   workspaceId: z.string().uuid(),
   query: z.string().max(400).optional(),
   limit: z.number().int().min(1).max(40).optional(),
+  kind: z.enum(["image", "video"]).optional(),
 });
 
 /** صور موقع المستخدم المحفوظة، مرتّبة حسب صلتها بنص البحث إن وُجد. */
@@ -70,12 +72,12 @@ export const listSiteAssets = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { data: rows } = await context.supabase
       .from("site_assets")
-      .select("id, url, alt, page_url, weight")
+      .select("id, url, alt, page_url, weight, kind")
       .eq("workspace_id", data.workspaceId)
       .order("weight", { ascending: false })
       .limit(120);
 
-    const assets = (rows ?? []) as StoredAsset[];
+    const assets = ((rows ?? []) as StoredAsset[]).filter((asset) => !data.kind || asset.kind === data.kind);
     const limit = data.limit ?? 24;
     const q = data.query?.trim();
     if (!q) return { assets: assets.slice(0, limit) };
@@ -88,6 +90,7 @@ export const listSiteAssets = createServerFn({ method: "POST" })
         alt: a.alt ?? "",
         pageUrl: a.page_url ?? "",
         weight: a.weight,
+        kind: a.kind,
       })),
       limit,
     );

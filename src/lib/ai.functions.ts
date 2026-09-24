@@ -813,7 +813,7 @@ export async function runEmployeeTurn(
       .reverse()
       .map((m) => ({ role: m.role === "user" ? "user" : "assistant", content: m.body }));
 
-    // قراءة فعلية لوسائط المستخدم: نصف الصور بنموذج بصري ليعتمد الموظف على محتواها.
+    // قراءة فعلية لكل الوسائط: صور وفيديوهات ومستندات، بنفس المسار لكل الموظفين.
     let mediaRead = "";
     if (attachments.length) {
       try {
@@ -827,7 +827,7 @@ export async function runEmployeeTurn(
     // نُعلم الموظف بوسائط المستخدم وبقراره حول الصورة حتى يبني عليها بدل تجاهلها.
     const mediaNote = [
       attachments.length
-        ? `(المستخدم أرفق ${attachments.filter((a) => a.type === "image").length} صورة و${attachments.filter((a) => a.type === "video").length} فيديو و${attachments.filter((a) => a.type === "file").length} ملف مع الطلب — اعتمدها كما هي ولا تطلب غيرها.)`
+        ? `(المستخدم أرفق ${attachments.filter((a) => a.type === "image").length} صورة و${attachments.filter((a) => a.type === "video").length} فيديو و${attachments.filter((a) => a.type === "file").length} ملف مع الطلب — افهم محتواها المقروء أدناه ونفّذ المطلوب، ولا تدّعِ معرفة جزء تعذّر تحليله.)`
         : "",
       mediaRead
         ? `(محتوى وسائط وملفات المستخدم كما قرأها النظام حرفياً — اعتمد عليه ونفّذ ما طلبه منه مباشرة، وحلّله إن سُئلت عنه: ${mediaRead.slice(0, 12_000)})`
@@ -1393,8 +1393,8 @@ export async function runEmployeeTurn(
 
         // أول مرة: نلتقط صور الموقع الآن ثم نحفظها للمرات القادمة.
         if (!pool.length && workspace?.website) {
-          const { harvestSiteImages } = await import("./brand-assets.server");
-          const found = await harvestSiteImages(workspace.website, 10);
+          const { harvestSiteAssets } = await import("./brand-assets.server");
+          const found = await harvestSiteAssets(workspace.website, 16);
           if (found.length) {
             await supabase.from("site_assets").upsert(
               found.map((a) => ({
@@ -1404,7 +1404,7 @@ export async function runEmployeeTurn(
                 alt: a.alt || null,
                 weight: a.weight,
                 source: "website",
-                kind: "image",
+                kind: a.kind,
               })),
               { onConflict: "workspace_id,url" },
             );
@@ -1420,7 +1420,7 @@ export async function runEmployeeTurn(
         if (pool.length) {
           const { rankAssets } = await import("./brand-assets.server");
           const query = `${data.message}\n${deliverables.map((d) => `${d.title ?? ""} ${d.body ?? ""}`).join("\n")}`;
-          siteSuggestions = rankAssets(query, pool, 12).map((a) => ({
+          siteSuggestions = rankAssets(query, pool.filter((a) => a.kind === "image"), 6).map((a) => ({
             url: a.url,
             alt: a.alt,
             pageUrl: a.pageUrl,

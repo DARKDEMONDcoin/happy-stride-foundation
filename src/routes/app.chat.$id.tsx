@@ -1225,6 +1225,7 @@ function ChatView({
               const newDay = !prev || dayLabel(prev.created_at) !== dayLabel(m.created_at);
               const isUser = m.role === "user";
               const body = isUser ? m.body : prettyBody(m.body);
+              const parsedUser = isUser ? splitUserBody(m.body) : null;
               const priorRequest = messageRequests[idx] ?? "";
               return (
                 <div key={m.id} className="space-y-4">
@@ -1250,29 +1251,20 @@ function ChatView({
                           <Portrait memberId={member.id} name={member.name} className="size-full" />
                         </span>
                       ) : null}
+                      <div className={cn("min-w-0", isUser ? "max-w-[min(46rem,78%)]" : "order-1 w-full max-w-[min(76rem,calc(100%-3rem))]") }>
+                      {parsedUser?.items.length ? (
+                        <ChatAttachments items={parsedUser.items} className="mb-2" />
+                      ) : null}
                       <MessageContent
                         className={cn(
                           "chat-message-content min-w-0 px-4 py-3 text-sm leading-7",
                           isUser
-                            ? "max-w-[min(46rem,78%)] bubble-user rounded-xl rounded-ss-sm text-primary-foreground whitespace-pre-wrap shadow-card"
-                            : "order-1 w-full max-w-[min(76rem,calc(100%-3rem))] bg-transparent",
+                            ? "bubble-user rounded-xl rounded-ss-sm text-primary-foreground whitespace-pre-wrap shadow-card"
+                            : "w-full bg-transparent",
                         )}
                       >
                         {isUser ? (
-                          (() => {
-                            const parsed = splitUserBody(m.body);
-                            return (
-                              <>
-                                {parsed.items.length ? (
-                                  <ChatAttachments
-                                    items={parsed.items}
-                                    className={parsed.text ? "mb-2" : undefined}
-                                  />
-                                ) : null}
-                                {parsed.text ? <p dir="auto">{parsed.text}</p> : null}
-                              </>
-                            );
-                          })()
+                          parsedUser?.text ? <p dir="auto">{parsedUser.text}</p> : null
                         ) : (
                           <Markdown body={body} onOpenApp={openAppInChat} />
                         )}
@@ -1362,6 +1354,7 @@ function ChatView({
                           ) : null}
                         </div>
                       </MessageContent>
+                      </div>
                     </div>
                   </Message>
                 </div>
@@ -1370,16 +1363,16 @@ function ChatView({
 
             {pending ? (
               <div className="flex justify-start gap-3 animate-bubble-in">
-                <div className="bubble-user min-w-0 max-w-[min(46rem,88%)] rounded-3xl rounded-ss-lg px-5 py-3.5 leading-relaxed text-background shadow-card">
+                <div className="min-w-0 max-w-[min(46rem,88%)]">
                   {attachments.length ? (
                     <ChatAttachments items={attachments} className="mb-2" />
                   ) : null}
-                  <p dir="auto" className="whitespace-pre-wrap">
-                    {pending}
-                  </p>
-                  <p className="mt-1.5 flex items-center gap-1.5 text-[0.7rem] text-background/60">
-                    <Check className="size-3" /> وصل إلى {member.name}
-                  </p>
+                  <div className="bubble-user rounded-xl rounded-ss-sm px-5 py-3.5 leading-relaxed text-background shadow-card">
+                    <p dir="auto" className="whitespace-pre-wrap">{pending}</p>
+                    <p className="mt-1.5 flex items-center gap-1.5 text-[0.7rem] text-background/60">
+                      <Check className="size-3" /> وصل إلى {member.name}
+                    </p>
+                  </div>
                 </div>
               </div>
             ) : null}
@@ -1645,7 +1638,7 @@ function ChatView({
                 </PromptInputTools>
                 <PromptInputSubmit
                   {...(busy ? { status: "streaming" as const, onStop: stopSending } : {})}
-                  disabled={!busy && (!workspace || !draft.trim())}
+                  disabled={!busy && (!workspace || (!draft.trim() && !attachments.length))}
                   aria-label={busy ? "إيقاف" : "إرسال"}
                   title={busy ? "إيقاف الطلب" : "إرسال"}
                   className="size-9 rounded-lg"
