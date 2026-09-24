@@ -20,8 +20,10 @@ export function wantsWebImage(message: string): boolean {
 /** ينظّف الطلب إلى موضوع الصورة فقط. */
 export function imageQuery(message: string): string {
   return (message ?? "")
+    .replace(/[؟?!.,،]/g, " ")
+    .replace(/(^|\s)يا\s+\S+/gu, " ")
     .replace(
-      /(يا\s*\S+[،,]?)|هات(لي)?|جيب(لي)?|ابحث|دوّ?ر|عايز|عاوز|أريد|اريد|ابغى|لي|عن|على|علي|من|ال(نت|انترنت|إنترنت)|إنترنت|انترنت|النت|جوجل|google|صور[ةه]?|صور|حقيقي[ةه]|فعلي[ةه]|خاص[ةه]|بـ?اللي|انا|كاتب[هة]?|please|image|photo|of/giu,
+      /(?<=^|\s)(?:هات(لي)?|جيب(لي)?|ابحث|دوّ?ر|عايز|عاوز|أريد|اريد|ابغى|لي|عن|على|علي|من|ال(نت|انترنت|إنترنت)|إنترنت|انترنت|النت|جوجل|google|صور[ةه]?|صور|حقيقي[ةه]|فعلي[ةه]|خاص[ةه]|بـ?اللي|انا|كاتب[هة]?|please|image|photo|of)(?=\s|$)/giu,
       " ",
     )
     .replace(/[؟?!.,،]/g, " ")
@@ -113,7 +115,9 @@ export async function webImageSearch(message: string, max = 4): Promise<WebImage
   const latin = latinQuery(topic);
   const en = latin && latin !== topic ? latin : topic;
   const lists = await Promise.all([
-    newsImages(topic, 8000),
+    /فوز|مبارا|خبر|أخبار|اخبار|حدث|اليوم|أمس|امس|news/i.test(message)
+      ? newsImages(topic, 8000)
+      : Promise.resolve([]),
     openverse(en, 6000),
     commons(en, 6000),
     en !== topic ? commons(topic, 6000) : Promise.resolve([]),
