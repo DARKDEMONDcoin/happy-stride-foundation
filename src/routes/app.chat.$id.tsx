@@ -967,7 +967,7 @@ function ChatView({
     let last = "";
     return (messages ?? []).map((message) => {
       const before = last;
-      if (message.role === "user") last = message.body;
+      if (message.role === "user") last = splitUserBody(message.body).text || message.body;
       return before;
     });
   }, [messages]);
@@ -1311,7 +1311,7 @@ function ChatView({
                         ) : null}
 
                         {(() => {
-                          const req = isUser ? m.body : priorRequest;
+                          const req = isUser ? splitUserBody(m.body).text || m.body : priorRequest;
                           const handoff = detectHandoff(req, id);
                           if (!handoff) return null;
                           // تظهر مرة واحدة: مع رسالة المستخدم مباشرة إن كانت آخر رسالة،
