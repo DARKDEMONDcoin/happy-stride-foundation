@@ -20,6 +20,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { generateMedia } from "@/lib/media.functions";
 import { listSiteAssets, syncSiteAssets, type StoredAsset } from "@/lib/brand-assets.functions";
 import { ReelStudio } from "@/components/app/ReelStudio";
+import { ChatAttachments } from "@/components/app/ChatAttachments";
 import { cn } from "@/lib/utils";
 
 export type Attachment = {
@@ -278,38 +279,12 @@ export function MediaStudio({
       ) : null}
 
       {attachments.length ? (
-        <div className="mt-2 flex flex-wrap gap-2">
-          {attachments.map((a) => (
-            <span
-              key={a.url}
-              className="group relative overflow-hidden rounded-xl border border-border bg-secondary"
-            >
-              {a.type === "image" ? (
-                <img src={a.url} alt="مرفق" className="size-16 object-cover" loading="lazy" />
-              ) : a.type === "video" ? (
-                <span className="grid size-16 place-items-center text-[0.65rem] font-bold">
-                  فيديو
-                </span>
-              ) : (
-                <span
-                  className="grid size-16 place-items-center gap-0.5 px-1 text-center text-[0.6rem] font-bold leading-tight"
-                  title={`${a.alt ?? "ملف"}${a.size ? ` · ${humanSize(a.size)}` : ""}`}
-                >
-                  <FileText className="mx-auto size-4" />
-                  <span className="line-clamp-2 break-all">{a.alt ?? "ملف"}</span>
-                </span>
-              )}
-              <button
-                type="button"
-                aria-label="إزالة المرفق"
-                onClick={() => onAttachmentsChange(attachments.filter((x) => x.url !== a.url))}
-                className="absolute inset-x-0 bottom-0 grid min-h-6 place-items-center bg-foreground/80 text-background opacity-0 transition-opacity focus-visible:opacity-100 group-hover:opacity-100 [@media(hover:none)]:opacity-100"
-              >
-                <X className="mx-auto size-3" />
-              </button>
-            </span>
-          ))}
-        </div>
+        <ChatAttachments
+          compact
+          className="mt-2"
+          items={attachments}
+          onRemove={(url) => onAttachmentsChange(attachments.filter((x) => x.url !== url))}
+        />
       ) : null}
 
       {open ? (
