@@ -42,7 +42,6 @@ import { ConnectNow } from "@/components/app/ConnectNow";
 import { InlineApproval } from "@/components/app/InlineApproval";
 import { getMember } from "@/data/team";
 import {
-  useAddBrainItem,
   useBrainItems,
   useConversations,
   useCreateConversation,
@@ -52,6 +51,7 @@ import {
   useProfile,
   useRenameConversation,
   useWorkspace,
+  useSaveBrandKnowledge,
 } from "@/lib/data";
 import { askEmployee, runSkill } from "@/lib/ai.functions";
 import { saveChatSignal } from "@/lib/learning.functions";
@@ -617,7 +617,7 @@ const EMPLOYEE_COPY: Record<string, { prompts: string[]; greetings: string[] }> 
 };
 
 /** أزرار الشريط العلوي المناسبة لكل موظف. */
-const BAR_BRAND = new Set(["sonny", "nour", "dana"]);
+const BAR_BRAND = new Set(["sonny", "eva", "sam", "nour", "dana", "adam"]);
 const BAR_WORK = new Set(["sonny", "eva", "sam", "nour", "adam", "dana"]);
 
 function useTypewriter(lines: string[], pause = 1700, enabled = true) {
@@ -679,7 +679,7 @@ function ChatView({
   const { data: messages } = useMessages(workspace?.id, id, conversationId);
   const { data: integrations } = useIntegrations(workspace?.id);
   const { data: brainItems } = useBrainItems(workspace?.id);
-  const addBrainItem = useAddBrainItem(workspace?.id);
+  const saveBrandKnowledge = useSaveBrandKnowledge(workspace?.id);
   const hasVoiceGuide = (brainItems ?? []).some((b) => b.title === "دليل صوت العلامة");
   const { prompt: prefill } = Route.useSearch();
   const [draft, setDraft] = useState(prefill ?? "");
@@ -1803,20 +1803,23 @@ function ChatView({
                       />
                       <button
                         type="button"
-                        disabled={!workspace || !brandSource.trim() || addBrainItem.isPending}
+                        disabled={!workspace || !brandSource.trim() || saveBrandKnowledge.isPending}
                         onClick={() =>
-                          addBrainItem.mutate(
+                          saveBrandKnowledge.mutate(
                             {
                               kind: brandSource.trim().startsWith("http") ? "link" : "note",
-                              title: brandSource.trim().slice(0, 120),
-                              body: brandSource.trim(),
+                              value: brandSource.trim(),
                             },
-                            { onSuccess: () => setBrandSource("") },
+                            {
+                              onSuccess: () => setBrandSource(""),
+                              onError: (error) =>
+                                toast.error(error instanceof Error ? error.message : "تعذّر حفظ المعرفة"),
+                            },
                           )
                         }
                         className="shrink-0 rounded-full bg-foreground px-3 py-2 text-[0.7rem] font-bold text-background disabled:opacity-50"
                       >
-                        {addBrainItem.isPending ? (
+                        {saveBrandKnowledge.isPending ? (
                           <Loader2 className="size-3.5 animate-spin" />
                         ) : (
                           "أضف"
