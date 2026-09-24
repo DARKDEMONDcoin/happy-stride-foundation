@@ -5,7 +5,7 @@ import type { Database } from "@/integrations/supabase/types";
 import { ambientPulse, timezoneForCountry } from "./live-context.server";
 import { localParts, zonedTimeToUtc } from "./timezone";
 import { craft, personas } from "./nour-run.server";
-import { memoryBlock } from "./memory.server";
+import { buildBrandContext } from "./brand-context.server";
 import { adaptForProvider } from "./post-format";
 import { sharedSystemBlocks, governanceBlocks } from "./team-knowledge";
 
@@ -160,9 +160,8 @@ function systemFor(
       country: ctx.ws.country,
       dialect,
     }),
-    `## العلامة\nالاسم: ${ctx.ws.name} · المجال: ${ctx.ws.industry} · النبرة: ${ctx.ws.tone} · اللهجة المطلوبة: ${dialect}` +
-      (ctx.ws.banned_words?.length ? `\nكلمات ممنوعة: ${ctx.ws.banned_words.join("، ")}` : ""),
-    ctx.brain.length ? `## عقل العلامة\n${memoryBlock(ctx.brain as never, query, 8)}` : "",
+    `اللهجة المطلوبة صراحةً من المالك: ${dialect}`,
+    buildBrandContext(ctx.ws, ctx.brain as never, query, 10),
     ctx.learning ? `## ما تعلّمته من أداء منشوراتنا السابقة (طبّقه)\n${ctx.learning}` : "",
   ]
     .filter(Boolean)

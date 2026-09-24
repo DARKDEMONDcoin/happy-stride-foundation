@@ -9,7 +9,7 @@ import type { Database } from "@/integrations/supabase/types";
 import { getSkill } from "@/data/skills";
 import { freeChat, gatherEvidence, planResearch } from "./nour-research.server";
 import { withBudget } from "./seo-research.server";
-import { memoryBlock } from "./memory.server";
+import { buildBrandContext } from "./brand-context.server";
 import { actionTruthRules, sanitizeActionClaims } from "./action-claims";
 import {
   sharedSystemBlocks,
@@ -779,7 +779,12 @@ export async function executeSkill(
     .map(([k, v]) => `${k}: ${v.length > 120 ? `${v.slice(0, 120)}…` : v}`)
     .join(" · ");
 
-  const brainText = memoryBlock(brain ?? [], `${skill.title} ${requestSummary}`, 8);
+  const brandContext = buildBrandContext(
+    workspace,
+    brain ?? [],
+    `${skill.title} ${requestSummary}`,
+    10,
+  );
 
   const research = await researchFor(
     params.employeeId,
@@ -932,12 +937,8 @@ export async function executeSkill(
     // سلّم السلطة والالتزام أولاً فعلاً — كما في مسار المحادثة تماماً — كي يحكما
     // كل ما بعدهما. كان يسبقهما سطر النبرة والوقت فيصير «اقرأه أولاً» غير صحيح.
     ...governanceBlocks(params.employeeId),
-    `تعمل داخل منصة «سهل» لصالح العلامة: ${workspace.name} (${workspace.industry}).`,
-    `نبرة العلامة: ${workspace.tone}.`,
+    `تعمل داخل منصة «سهل» لصالح العلامة المسجلة في المرجع الموحّد أدناه.`,
     nowBlock(timeZone, ws.country),
-    workspace.banned_words?.length
-      ? `كلمات ممنوعة تماماً: ${workspace.banned_words.join("، ")}.`
-      : "",
     // نفس طبقات الحوكمة المستخدمة في المحادثة، بنية «عمل» ثابتة — حتى يكون مخرج
     // القدرات والجدولة التلقائية مطابقاً لمخرج المحادثة بلا نصف تعليمات.
     answerPolicyBlock(params.employeeId, "work"),
@@ -979,7 +980,7 @@ export async function executeSkill(
       dialect: ownerDialect,
     }),
 
-    brainText ? `## عقل العلامة (ذاكرة مشتركة بين الفريق)\n${brainText}` : "",
+    brandContext,
     research.block ? `${evidenceRules}\n\n## أدلة ميدانية (لحظية)\n${research.block}` : "",
     live.block
       ? `## بيانات حسابات العلامة (حيّة الآن)\n${live.block}\n\nاعتمد على هذه البيانات الحقيقية في القرارات والأولويات والأسماء والمواعيد، ولا تخترع غيرها.`

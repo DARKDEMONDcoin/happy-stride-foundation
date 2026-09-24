@@ -25,6 +25,7 @@ import { playbookFor } from "@/lib/playbooks";
 import { answerPolicyBlock } from "./answer-policy";
 import { reasoningDepthBlock, effortFor } from "./reasoning-depth";
 import { replyStructureBlock } from "@/lib/reply-structure";
+import { buildBrandContext } from "@/lib/brand-context.server";
 
 type Deliverable = {
   title?: string;
@@ -398,9 +399,9 @@ export async function runEmployeeTurn(
         : `قرأت طلبك عن «${turnTopic}» وذاكرة علامتك`,
     });
 
-    const { durableMemoryItems, extractExplicitMemories, memoryBlock } =
-      await import("./memory.server");
-    const brainText = memoryBlock(
+    const { durableMemoryItems, extractExplicitMemories } = await import("./memory.server");
+    const brandContext = buildBrandContext(
+      workspace,
       [...(brain ?? []), ...durableMemoryItems(durable ?? [])],
       data.message,
       10,
@@ -695,8 +696,7 @@ export async function runEmployeeTurn(
 
     const system = [
       `أنت ${persona.name}، ${persona.role}`,
-      `تعمل داخل منصة «سهل» لصالح العلامة: ${workspace.name} (${workspace.industry}).`,
-      `نبرة العلامة: ${workspace.tone}.`,
+      `تعمل داخل منصة «سهل» لصالح العلامة المسجلة في المرجع الموحّد أدناه.`,
       // الحاكمان أولاً: سلّم السلطة ثم الالتزام القانوني — كل ما بعدهما محكوم بهما.
       ...governanceBlocks(data.employeeId),
       nowBlock(timezone, ws.country),
@@ -718,9 +718,6 @@ export async function runEmployeeTurn(
       // كتل التميّز تُحقن للعمل وللأسئلة الاستشارية معاً (كما في مسار المهام التلقائية)،
       // وتُستثنى الدردشة وحدها. قبلها كان السؤال الاستشاري يخسر عمقاً تحصل عليه الأتمتة.
       intent !== "smalltalk" ? employeeEdgeBlock(data.employeeId) : "",
-      workspace.banned_words?.length
-        ? `كلمات ممنوعة تماماً: ${workspace.banned_words.join("، ")}.`
-        : "",
       // ملف الحِرفة والدليل الميداني ثقيلان ويتعارضان مع أمر «رد قصير بلا بنية»
       // في الدردشة، فلا يُحقنان في التحيات والمجاملات.
       intent !== "smalltalk" && craft[data.employeeId]
@@ -747,7 +744,7 @@ export async function runEmployeeTurn(
         country: ws.country,
         dialect: ownerDialect,
       }),
-      brainText ? `## عقل العلامة (ذاكرة مشتركة بين الفريق)\n${brainText}` : "",
+      brandContext,
       teamActivity ? `## آخر ما أنجزه الفريق\n${teamActivity}` : "",
       research.block ? `${evidenceRules}\n\n## أدلة ميدانية (لحظية)\n${research.block}` : "",
       // بحث الموظف في مجاله (أو قاعدة الصدق إن تعذّر البحث).

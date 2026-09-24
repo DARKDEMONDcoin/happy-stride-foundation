@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { BrandVoiceResult } from "@/lib/brand-voice.server";
+import { BRAND_EMPLOYEE_IDS, sanitizeBrandKnowledge } from "@/lib/brand-context.server";
 
 const input = z
   .object({
@@ -35,7 +36,7 @@ export const extractBrandVoice = createServerFn({ method: "POST" })
     const { collectSiteText, analyzeStyle, synthesizeVoice, voiceRuleText } =
       await import("./brand-voice.server");
 
-    let text = data.samples ?? "";
+    let text = sanitizeBrandKnowledge(data.samples ?? "", 20_000);
     let urls: string[] = [];
     let headings: string[] = [];
     let taglines: string[] = [];
@@ -45,7 +46,7 @@ export const extractBrandVoice = createServerFn({ method: "POST" })
       urls = site.urls;
       headings = site.headings;
       taglines = site.taglines;
-      text = [site.text, headings.join("\n"), taglines.join("\n"), data.samples ?? ""]
+      text = [site.text, headings.join("\n"), taglines.join("\n"), text]
         .filter(Boolean)
         .join("\n\n");
     }
@@ -59,6 +60,7 @@ export const extractBrandVoice = createServerFn({ method: "POST" })
         .order("created_at", { ascending: false })
         .limit(12);
       const fromBrain = (items ?? [])
+        .filter((item) => item.title !== "دليل صوت العلامة")
         .map((i) => [i.title, i.body].filter(Boolean).join("\n"))
         .join("\n\n")
         .slice(0, 16_000);
@@ -82,26 +84,40 @@ export const extractBrandVoice = createServerFn({ method: "POST" })
 
     let savedId: string | null = null;
     if (data.save) {
-      // نستبدل أي دليل سابق حتى لا تتضارب القواعد
-      await supabase
-        .from("brain_items")
-        .delete()
-        .eq("workspace_id", workspace.id)
-        .eq("title", "دليل صوت العلامة");
-      const { data: row, error: insErr } = await supabase
-        .from("brain_items")
-        .insert({
+      const payload = {
           workspace_id: workspace.id,
           kind: "note",
           title: "دليل صوت العلامة",
-          meta: `قاعدة نبرة إلزامية · استُخرج ${urls.length ? `من ${urls.length} صفحات` : "من عينات نصية"} · ${new Date().toLocaleDateString("ar-EG")}`,
+          meta: `قاعدة نبرة إلزامية · استُخرج ${urls.length ? `من ${urls.length} صفحات` : "من عينات نصية"} · ${stats.sampleWords} كلمة · ثقة اللهجة ${Math.round(stats.dialectConfidence * 100)}٪ · ${new Date().toLocaleDateString("ar-EG")}`,
           body: rule,
-          used_by: ["sonny", "eva", "sam", "nour", "dana", "adam"],
-        })
+          used_by: [...BRAND_EMPLOYEE_IDS],
+      };
+      const { data: existing, error: existingError } = await supabase
+        .from("brain_items")
         .select("id")
-        .single();
-      if (insErr) throw new Error(insErr.message);
-      savedId = row.id;
+        .eq("workspace_id", workspace.id)
+        .eq("title", "دليل صوت العلامة")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (existingError) throw new Error(existingError.message);
+      if (existing) {
+        const { error: updateError } = await supabase
+          .from("brain_items")
+          .update(payload)
+          .eq("id", existing.id)
+          .eq("workspace_id", workspace.id);
+        if (updateError) throw new Error(updateError.message);
+        savedId = existing.id;
+      } else {
+        const { data: row, error: insertError } = await supabase
+          .from("brain_items")
+          .insert(payload)
+          .select("id")
+          .single();
+        if (insertError) throw new Error(insertError.message);
+        savedId = row.id;
+      }
     }
 
     return { sourceUrls: urls, stats, profile, rule, savedId };
