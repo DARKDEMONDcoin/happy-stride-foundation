@@ -293,12 +293,16 @@ const cleanMeta = (value: unknown, max = 120): string =>
 export async function searchCommonsAssets(rawQuery: string): Promise<CommonsAsset[]> {
   const query = tokens(rawQuery).slice(0, 8).join(" ");
   if (!query) return [];
-  const search = async (kind: "image" | "video", limit: number): Promise<CommonsAsset[]> => {
+  const search = async (
+    kind: "image" | "video",
+    limit: number,
+    terms: string,
+  ): Promise<CommonsAsset[]> => {
     try {
       const params = new URLSearchParams({
         action: "query",
         generator: "search",
-        gsrsearch: `${query} ${kind === "video" ? "filetype:video" : "filetype:bitmap"}`,
+        gsrsearch: `${terms} ${kind === "video" ? "filetype:video" : "filetype:bitmap"}`,
         gsrnamespace: "6",
         gsrlimit: String(Math.max(limit * 2, 8)),
         prop: "imageinfo",
@@ -350,7 +354,14 @@ export async function searchCommonsAssets(rawQuery: string): Promise<CommonsAsse
       return [];
     }
   };
-  const [images, videos] = await Promise.all([search("image", 6), search("video", 3)]);
+  const broadQuery = tokens(rawQuery).slice(0, 3).join(" ") || query;
+  let [images, videos] = await Promise.all([
+    search("image", 6, query),
+    search("video", 3, query),
+  ]);
+  // عقول العلامات قد تكون طويلة جداً؛ نوسّع البحث تلقائياً إن لم يطابقها Commons حرفياً.
+  if (!images.length && broadQuery !== query) images = await search("image", 6, broadQuery);
+  if (!videos.length && broadQuery !== query) videos = await search("video", 3, broadQuery);
   return [...images, ...videos];
 }
 
