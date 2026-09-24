@@ -105,6 +105,12 @@ export async function judgeAndImprove(input: JudgeInput): Promise<JudgeVerdict> 
   });
   const mustFix = audit.issues.map((i) => i.hint);
 
+  // مسار سريع: مخرج قصير اجتاز كل الفحوص الحتمية لا يحتاج جولة نموذج إضافية
+  // (كانت تضيف ١٠–٤٠ ثانية على كل منشور أو رسالة قصيرة بلا أي تحسين فعلي).
+  if (audit.penalty === 0 && original.length < 900) {
+    return { score: 90, issues: [], output: original, revised: false, checked: true };
+  }
+
   // المخرج يُعرض للحَكَم كاملاً تقريباً: القطع عند ٩ آلاف حرف كان يجعله يحكم على نص
   // ناقص فيخصم على «عدم الاكتمال» ظلماً ويُطلق إصلاحاً لا داعي له (وقت مهدور).
   const brief = [
