@@ -7,12 +7,13 @@ import { cn } from "@/lib/utils";
 export type ChatAttachment = {
   url: string;
   type: "image" | "video" | "file";
-  alt?: string;
+  alt?: string | undefined;
   size?: number;
 };
 
 /** الصيغ التي يحفظ بها الخادم مرفقات المستخدم داخل نص رسالته. */
-const ATTACHMENT_LINE = /^\s*(?:(!)\[([^\]]*)\]|(🎬|📎)\s*\[([^\]]*)\])\((https?:\/\/[^\s)]+)\)\s*$/u;
+const ATTACHMENT_LINE =
+  /^\s*(?:(!)\[([^\]]*)\]|(🎬|📎)\s*\[([^\]]*)\])\((https?:\/\/[^\s)]+)\)\s*$/u;
 
 /** يفصل نص رسالة المستخدم عن مرفقاتها، لتُعرض الوسائط بشكلها الحقيقي بدل روابط خام. */
 export function splitUserBody(body: string): { text: string; items: ChatAttachment[] } {
@@ -52,7 +53,7 @@ export function ChatAttachments({
   items: ChatAttachment[];
   onRemove?: (url: string) => void;
   compact?: boolean;
-  className?: string;
+  className?: string | undefined;
 }) {
   const media = items.filter((a) => a.type !== "file");
   const files = items.filter((a) => a.type === "file");
