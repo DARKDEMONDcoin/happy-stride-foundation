@@ -149,8 +149,8 @@ export function MediaStudio({
     mutationFn: () => syncAssets({ data: { workspaceId: workspaceId! } }),
     onSuccess: (res) => {
       void assetsQuery.refetch();
-      if (!res?.ok) setError("أضف رابط موقعك في الإعدادات أولاً حتى نسحب صوره.");
-      else if (!res.count) setError("لم نجد صوراً مناسبة في موقعك.");
+      if (!res?.ok) setError("أضف رابط موقعك أو رابطاً في عقل العلامة أولاً حتى نسحب وسائطه.");
+      else if (!res.count) setError("لم نجد صوراً أو فيديوهات أصلية مناسبة في الروابط المحفوظة.");
       else setError(null);
     },
     onError: (e: unknown) => setError(e instanceof Error ? e.message : "تعذّر سحب صور الموقع"),
@@ -595,7 +595,7 @@ export function MediaStudio({
           <div className="rounded-xl border border-border bg-background/60 p-2.5">
             <div className="flex flex-wrap items-center gap-2">
               <Globe className="size-4 text-muted-foreground" />
-              <span className="text-[0.7rem] font-bold">صور من موقعك</span>
+              <span className="text-[0.7rem] font-bold">صور من موقعك وروابط العلامة</span>
               <button
                 type="button"
                 disabled={!workspaceId || sync.isPending}
@@ -646,7 +646,7 @@ export function MediaStudio({
               </div>
             ) : (
               <p className="mt-1.5 text-[0.68rem] text-muted-foreground">
-                نجلب صور منتجاتك ومقالاتك من موقعك لتستخدمها مباشرة في المنشورات.
+                نجلب صور منتجاتك ومقالاتك من موقعك والروابط المحفوظة في عقل العلامة.
               </p>
             )}
           </div>
@@ -654,7 +654,7 @@ export function MediaStudio({
           <div className="rounded-xl border border-border bg-background/60 p-2.5">
             <div className="flex items-center gap-2">
               <Globe className="size-4 text-muted-foreground" />
-              <span className="text-[0.7rem] font-bold">فيديو من موقعك</span>
+              <span className="text-[0.7rem] font-bold">فيديو من موقعك وروابط العلامة</span>
               <span className="ms-auto text-[0.65rem] text-muted-foreground">أفضل ٤ فيديوهات</span>
             </div>
             {siteVideos.length ? (

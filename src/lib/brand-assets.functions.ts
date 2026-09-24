@@ -33,20 +33,32 @@ export const syncSiteAssets = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => syncSchema.parse(input))
   .handler(async ({ data, context }) => {
     const supabase = context.supabase;
-    const { data: ws } = await supabase
-      .from("workspaces")
-      .select("website")
-      .eq("id", data.workspaceId)
-      .maybeSingle();
+    const [{ data: ws }, { data: brainLinks }] = await Promise.all([
+      supabase.from("workspaces").select("website").eq("id", data.workspaceId).maybeSingle(),
+      supabase
+        .from("brain_items")
+        .select("body, meta")
+        .eq("workspace_id", data.workspaceId)
+        .eq("kind", "link")
+        .limit(12),
+    ]);
 
     const target = data.url?.trim() || ws?.website || "";
-    if (!target) return { ok: false as const, reason: "no-website" as const, count: 0 };
+    const linkedUrls = (brainLinks ?? [])
+      .flatMap((item) => `${item.body ?? ""}\n${item.meta ?? ""}`.match(/https?:\/\/[^\s<>"')]+/gi) ?? [])
+      .slice(0, 4);
+    if (!target && !linkedUrls.length)
+      return { ok: false as const, reason: "no-website" as const, count: 0 };
 
     const { harvestSiteAssets, normalizeUrl } = await import("./brand-assets.server");
-    const site = normalizeUrl(target);
+    const sites = [...new Set([target, ...linkedUrls].map((url) => normalizeUrl(url)).filter(Boolean))] as string[];
+    const site = sites[0];
     if (!site) return { ok: false as const, reason: "bad-url" as const, count: 0 };
 
-    const found = await harvestSiteAssets(site, 16);
+    const found = (await Promise.all(sites.map((url) => harvestSiteAssets(url, 8))))
+      .flat()
+      .filter((asset, index, all) => all.findIndex((item) => item.url === asset.url) === index)
+      .slice(0, 120);
     if (found.length) {
       await supabase.from("site_assets").upsert(
         found.map((a) => ({
@@ -55,7 +67,7 @@ export const syncSiteAssets = createServerFn({ method: "POST" })
           page_url: a.pageUrl,
           alt: a.alt || null,
           weight: a.weight,
-          source: "website",
+          source: a.pageUrl.startsWith(new URL(site).origin) ? "website" : "brand-link",
           kind: a.kind,
         })),
         { onConflict: "workspace_id,url" },
