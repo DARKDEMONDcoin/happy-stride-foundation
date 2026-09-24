@@ -164,6 +164,17 @@ export const askEmployeeInput = z.object({
       }),
     )
     .max(10)
+    .superRefine((items, ctx) => {
+      if (items.filter((item) => item.type === "video").length > 4)
+        ctx.addIssue({ code: "custom", message: "الحد الأقصى ٤ فيديوهات." });
+      if (items.filter((item) => item.type === "file").length > 6)
+        ctx.addIssue({ code: "custom", message: "الحد الأقصى ٦ ملفات." });
+      items.forEach((item, index) => {
+        const max = item.type === "file" ? 25 * 1024 * 1024 : 50 * 1024 * 1024;
+        if (item.size && item.size > max)
+          ctx.addIssue({ code: "custom", path: [index, "size"], message: "حجم المرفق يتجاوز الحد المسموح." });
+      });
+    })
     .optional(),
   /** تحكّم المستخدم في الصورة التلقائية: تلقائي · إيقاف · وصف يكتبه بنفسه. */
   imageMode: z.enum(["auto", "off", "manual"]).optional(),

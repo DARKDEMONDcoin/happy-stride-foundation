@@ -1251,11 +1251,18 @@ function ChatView({
                           <Portrait memberId={member.id} name={member.name} className="size-full" />
                         </span>
                       ) : null}
-                      <div className={cn("min-w-0", isUser ? "max-w-[min(46rem,78%)]" : "order-1 w-full max-w-[min(76rem,calc(100%-3rem))]") }>
-                      {parsedUser?.items.length ? (
-                        <ChatAttachments items={parsedUser.items} className="mb-2" />
-                      ) : null}
-                      <MessageContent
+                      <div
+                        className={cn(
+                          "min-w-0",
+                          isUser
+                            ? "max-w-[min(46rem,78%)]"
+                            : "order-1 w-full max-w-[min(76rem,calc(100%-3rem))]",
+                        )}
+                      >
+                        {parsedUser?.items.length ? (
+                          <ChatAttachments items={parsedUser.items} className="mb-2" />
+                        ) : null}
+                        <MessageContent
                         className={cn(
                           "chat-message-content min-w-0 px-4 py-3 text-sm leading-7",
                           isUser
@@ -1353,7 +1360,7 @@ function ChatView({
                             </span>
                           ) : null}
                         </div>
-                      </MessageContent>
+                        </MessageContent>
                       </div>
                     </div>
                   </Message>

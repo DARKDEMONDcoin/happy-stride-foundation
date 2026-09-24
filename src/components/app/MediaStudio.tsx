@@ -18,7 +18,13 @@ import {
 
 import { supabase } from "@/integrations/supabase/client";
 import { generateMedia } from "@/lib/media.functions";
-import { listSiteAssets, syncSiteAssets, type StoredAsset } from "@/lib/brand-assets.functions";
+import {
+  findPublicBrandAssets,
+  listSiteAssets,
+  syncSiteAssets,
+  type PublicAsset,
+  type StoredAsset,
+} from "@/lib/brand-assets.functions";
 import { ReelStudio } from "@/components/app/ReelStudio";
 import { ChatAttachments } from "@/components/app/ChatAttachments";
 import { cn } from "@/lib/utils";
@@ -123,6 +129,7 @@ export function MediaStudio({
   // صور موقع المستخدم الحقيقية — يختار منها مباشرة بدل الصور المولّدة.
   const listAssets = useServerFn(listSiteAssets);
   const syncAssets = useServerFn(syncSiteAssets);
+  const findPublic = useServerFn(findPublicBrandAssets);
   const assetsQuery = useQuery({
     queryKey: ["site-assets", workspaceId],
     enabled: Boolean(workspaceId) && open,
@@ -131,6 +138,13 @@ export function MediaStudio({
   const siteAssets: StoredAsset[] = assetsQuery.data?.assets ?? [];
   const siteImages = siteAssets.filter((asset) => asset.kind === "image").slice(0, 12);
   const siteVideos = siteAssets.filter((asset) => asset.kind === "video").slice(0, 4);
+  const publicQuery = useQuery({
+    queryKey: ["public-brand-assets", workspaceId, imagePrompt.trim()],
+    enabled: false,
+    queryFn: () =>
+      findPublic({ data: { workspaceId: workspaceId!, query: imagePrompt.trim() || undefined } }),
+  });
+  const publicAssets: PublicAsset[] = publicQuery.data?.assets ?? [];
   const sync = useMutation({
     mutationFn: () => syncAssets({ data: { workspaceId: workspaceId! } }),
     onSuccess: (res) => {
@@ -403,6 +417,51 @@ export function MediaStudio({
                 if (files.length) void uploadFiles(files);
               }}
             />
+          </div>
+
+          <div className="rounded-xl border border-border bg-background/60 p-2.5">
+            <div className="flex flex-wrap items-center gap-2">
+              <Globe className="size-4 text-muted-foreground" />
+              <span className="text-[0.7rem] font-bold">وسائط عامة مرتبطة بعلامتك</span>
+              <button
+                type="button"
+                disabled={!workspaceId || publicQuery.isFetching}
+                onClick={() => void publicQuery.refetch()}
+                className="ms-auto inline-flex min-h-9 items-center gap-1 rounded-lg border border-border px-2.5 py-1 text-[0.68rem] font-bold hover:bg-secondary disabled:opacity-40"
+              >
+                {publicQuery.isFetching ? <Loader2 className="size-3 animate-spin" /> : <Globe className="size-3" />}
+                ابحث بالإنترنت
+              </button>
+            </div>
+            <p className="mt-1 text-[0.65rem] text-muted-foreground">
+              من Wikimedia Commons حسب عقل العلامة ووصف الصورة، مع إبقاء المصدر والترخيص ظاهرين.
+            </p>
+            {publicAssets.length ? (
+              <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {publicAssets.map((asset) => {
+                  const added = attachments.some((item) => item.url === asset.url);
+                  return (
+                    <div key={asset.url} className="overflow-hidden rounded-lg border border-border bg-background">
+                      <button type="button" onClick={() => attach(asset.url, asset.kind)} className="relative block w-full">
+                        {asset.kind === "image" ? (
+                          <img src={asset.url} alt={asset.alt ?? "صورة عامة"} loading="lazy" className="aspect-video w-full object-cover" />
+                        ) : (
+                          <video src={`${asset.url}#t=0.1`} muted playsInline preload="metadata" className="aspect-video w-full object-cover" />
+                        )}
+                        <span className="absolute inset-x-0 bottom-0 bg-foreground/80 py-1 text-[0.6rem] font-bold text-background">
+                          {added ? "مُرفقة ✓" : "أرفقها"}
+                        </span>
+                      </button>
+                      <a href={asset.page_url} target="_blank" rel="noreferrer" className="block truncate px-2 py-1 text-[0.58rem] text-muted-foreground underline" title={`${asset.creator} · ${asset.license}`}>
+                        المصدر · {asset.license}
+                      </a>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : publicQuery.isFetched && !publicQuery.isFetching ? (
+              <p className="mt-2 text-[0.68rem] text-muted-foreground">لم نجد وسائط عامة مناسبة بهذا السياق.</p>
+            ) : null}
           </div>
 
           {imageMode === "manual" ? (

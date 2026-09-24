@@ -12,6 +12,12 @@ export type StoredAsset = {
   kind: "image" | "video";
 };
 
+export type PublicAsset = StoredAsset & {
+  page_url: string;
+  license: string;
+  creator: string;
+};
+
 const syncSchema = z.object({
   workspaceId: z.string().uuid(),
   url: z.string().min(4).max(300).optional(),
@@ -96,4 +102,38 @@ export const listSiteAssets = createServerFn({ method: "POST" })
     );
     const byUrl = new Map(assets.map((a) => [a.url, a]));
     return { assets: ranked.map((r) => byUrl.get(r.url)!).filter(Boolean) };
+  });
+
+const publicSchema = z.object({
+  workspaceId: z.string().uuid(),
+  query: z.string().trim().max(180).optional(),
+});
+
+/** وسائط عامة قابلة لإعادة الاستخدام من Wikimedia Commons، مختارة بسياق عقل العلامة. */
+export const findPublicBrandAssets = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => publicSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const [{ data: workspace }, { data: brain }] = await Promise.all([
+      context.supabase
+        .from("workspaces")
+        .select("name, industry")
+        .eq("id", data.workspaceId)
+        .maybeSingle(),
+      context.supabase
+        .from("brain_items")
+        .select("title, body")
+        .eq("workspace_id", data.workspaceId)
+        .limit(12),
+    ]);
+    const contextText = [
+      data.query,
+      workspace?.name,
+      workspace?.industry,
+      ...(brain ?? []).flatMap((item) => [item.title, item.body?.slice(0, 180)]),
+    ]
+      .filter(Boolean)
+      .join(" ");
+    const { searchCommonsAssets } = await import("./brand-assets.server");
+    return { assets: await searchCommonsAssets(contextText) };
   });

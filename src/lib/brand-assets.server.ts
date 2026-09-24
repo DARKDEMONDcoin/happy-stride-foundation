@@ -12,6 +12,11 @@ export type SiteAsset = {
   kind: "image" | "video";
 };
 
+export type CommonsAsset = SiteAsset & {
+  license: string;
+  creator: string;
+};
+
 const UA =
   "Mozilla/5.0 (compatible; SahlBot/1.0; +https://sahl.app) AppleWebKit/537.36 Chrome/124 Safari/537.36";
 
@@ -271,6 +276,83 @@ export async function harvestSiteAssets(rawUrl: string, maxPages = 12): Promise<
 
 /** اسم قديم محفوظ للتوافق مع المسارات الحالية. */
 export const harvestSiteImages = harvestSiteAssets;
+
+const cleanMeta = (value: unknown, max = 120): string =>
+  String(value ?? "")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&nbsp;|&#160;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, max);
+
+/**
+ * يبحث في Wikimedia Commons فقط: مصدر عام موثّق يعيد رابط صفحة الأصل والترخيص.
+ * لا نعرض نتيجة بلا رابط ملف مباشر أو بلا صفحة مصدر، ولا نصفها بأنها ملك العلامة.
+ */
+export async function searchCommonsAssets(rawQuery: string): Promise<CommonsAsset[]> {
+  const query = tokens(rawQuery).slice(0, 8).join(" ");
+  if (!query) return [];
+  const search = async (kind: "image" | "video", limit: number): Promise<CommonsAsset[]> => {
+    try {
+      const params = new URLSearchParams({
+        action: "query",
+        generator: "search",
+        gsrsearch: `${query} ${kind === "video" ? "filetype:video" : "filetype:bitmap"}`,
+        gsrnamespace: "6",
+        gsrlimit: String(Math.max(limit * 2, 8)),
+        prop: "imageinfo",
+        iiprop: "url|mime|extmetadata",
+        iiurlwidth: kind === "video" ? "640" : "1200",
+        format: "json",
+        origin: "*",
+      });
+      const res = await fetch(`https://commons.wikimedia.org/w/api.php?${params}`, {
+        headers: { "User-Agent": "SahlBot/1.0 (support@sahl.app)", Accept: "application/json" },
+        signal: AbortSignal.timeout(12_000),
+      });
+      if (!res.ok) return [];
+      const json = (await res.json()) as {
+        query?: {
+          pages?: Record<
+            string,
+            {
+              title?: string;
+              imageinfo?: {
+                url?: string;
+                descriptionurl?: string;
+                mime?: string;
+                extmetadata?: Record<string, { value?: string }>;
+              }[];
+            }
+          >;
+        };
+      };
+      return Object.values(json.query?.pages ?? {})
+        .flatMap((page) => {
+          const info = page.imageinfo?.[0];
+          if (!info?.url || !info.descriptionurl) return [];
+          const mime = info.mime ?? "";
+          if (kind === "image" ? !mime.startsWith("image/") : !mime.startsWith("video/")) return [];
+          const meta = info.extmetadata ?? {};
+          return [{
+            url: info.url,
+            alt: cleanMeta(meta["ImageDescription"]?.value || page.title?.replace(/^File:/, ""), 180),
+            pageUrl: info.descriptionurl,
+            weight: 20,
+            kind,
+            license: cleanMeta(meta["LicenseShortName"]?.value || meta["UsageTerms"]?.value || "راجع المصدر"),
+            creator: cleanMeta(meta["Artist"]?.value || meta["Credit"]?.value || "Wikimedia Commons"),
+          }];
+        })
+        .slice(0, limit);
+    } catch {
+      return [];
+    }
+  };
+  const [images, videos] = await Promise.all([search("image", 6), search("video", 3)]);
+  return [...images, ...videos];
+}
 
 const STOP = new Set([
   "على",
