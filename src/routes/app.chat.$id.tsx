@@ -1510,8 +1510,23 @@ function ChatView({
           ) : null}
 
           <div className="chat-composer-dock pointer-events-none p-3 sm:p-5">
+            {attachments.length && activeTool !== "media" && !busy ? (
+              <div className="pointer-events-auto mb-2 rounded-2xl border border-border/70 bg-card p-2 shadow-sm">
+                <ChatAttachments
+                  compact
+                  items={attachments}
+                  onRemove={(url) => setAttachments((list) => list.filter((a) => a.url !== url))}
+                />
+              </div>
+            ) : null}
             <PromptInput
-              onSubmit={(message) => submit(message.text || draft)}
+              onSubmit={(message) =>
+                submit(
+                  message.text ||
+                    draft ||
+                    (attachments.length ? "راجع المرفقات دي وقولي رأيك فيها." : ""),
+                )
+              }
               className="chat-composer pointer-events-auto mx-auto w-full max-w-none rounded-2xl border border-border/70 p-2 transition-all focus-within:border-primary/55 focus-within:ring-4 focus-within:ring-primary/10"
             >
               <PromptInputTextarea
