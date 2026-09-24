@@ -9,6 +9,12 @@ export type SiteAsset = {
   alt: string;
   pageUrl: string;
   weight: number;
+  kind: "image" | "video";
+};
+
+export type CommonsAsset = SiteAsset & {
+  license: string;
+  creator: string;
 };
 
 const UA =
@@ -25,6 +31,18 @@ export function normalizeUrl(raw: string): string | null {
     const withScheme = /^https?:\/\//i.test(value) ? value : `https://${value}`;
     const u = new URL(withScheme);
     if (!u.hostname.includes(".")) return null;
+    if (u.username || u.password || !["http:", "https:"].includes(u.protocol)) return null;
+    if (u.port && !["80", "443"].includes(u.port)) return null;
+    const host = u.hostname.toLowerCase().replace(/^\[|\]$/g, "");
+    if (
+      host === "localhost" ||
+      host.endsWith(".local") ||
+      host.endsWith(".internal") ||
+      /^(0|10|127|169\.254|192\.168)\./.test(host) ||
+      /^172\.(1[6-9]|2\d|3[01])\./.test(host) ||
+      /^(::1|fc|fd|fe80)/i.test(host)
+    )
+      return null;
     return u.toString();
   } catch {
     return null;
@@ -35,11 +53,22 @@ async function getHtml(url: string, timeoutMs = 12000): Promise<string | null> {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
-    const res = await fetch(url, {
-      headers: { "user-agent": UA, accept: "text/html,application/xhtml+xml" },
-      signal: ctrl.signal,
-      redirect: "follow",
-    });
+    let current = normalizeUrl(url);
+    if (!current) return null;
+    let res: Response | null = null;
+    for (let hop = 0; hop < 4; hop += 1) {
+      res = await fetch(current, {
+        headers: { "user-agent": UA, accept: "text/html,application/xhtml+xml" },
+        signal: ctrl.signal,
+        redirect: "manual",
+      });
+      if (![301, 302, 303, 307, 308].includes(res.status)) break;
+      const location = res.headers.get("location");
+      if (!location) return null;
+      current = normalizeUrl(new URL(location, current).toString());
+      if (!current) return null;
+    }
+    if (!res) return null;
     if (!res.ok) return null;
     const type = res.headers.get("content-type") ?? "";
     if (!type.includes("html")) return null;
@@ -101,7 +130,12 @@ function pageTitle(html: string): string {
 function collectFromPage(html: string, pageUrl: string): SiteAsset[] {
   const out: SiteAsset[] = [];
   const title = pageTitle(html);
-  const push = (raw: string | undefined, alt: string, weight: number) => {
+  const push = (
+    raw: string | undefined,
+    alt: string,
+    weight: number,
+    kind: "image" | "video" = "image",
+  ) => {
     if (!raw) return;
     const abs = (() => {
       try {
@@ -111,15 +145,19 @@ function collectFromPage(html: string, pageUrl: string): SiteAsset[] {
       }
     })();
     if (!abs || !/^https?:/i.test(abs)) return;
-    if (/\.svg(\?|$)/i.test(abs)) return;
-    if (JUNK.test(abs)) return;
-    out.push({ url: abs, alt: alt.trim().slice(0, 200), pageUrl, weight });
+    if (kind === "image" && /\.svg(\?|$)/i.test(abs)) return;
+    if (kind === "image" && JUNK.test(abs)) return;
+    if (kind === "video" && !/\.(mp4|webm|mov|m4v)(\?|$)/i.test(abs)) return;
+    out.push({ url: abs, alt: alt.trim().slice(0, 200), pageUrl, weight, kind });
   };
 
   // صور المشاركة الاجتماعية: أعلى جودة وأكثرها تمثيلاً للصفحة.
   push(metaContent(html, "property", "og:image"), title, 60);
   push(metaContent(html, "name", "twitter:image"), title, 55);
   push(metaContent(html, "rel", "image_src"), title, 40);
+  push(metaContent(html, "property", "og:video"), title, 70, "video");
+  push(metaContent(html, "property", "og:video:url"), title, 72, "video");
+  push(metaContent(html, "property", "og:video:secure_url"), title, 74, "video");
 
   for (const a of allTags(html, "img")) {
     const srcset = a["srcset"] ?? a["data-srcset"];
@@ -133,6 +171,16 @@ function collectFromPage(html: string, pageUrl: string): SiteAsset[] {
     const h = Number(a["height"] ?? 0);
     if ((w && w < 200) || (h && h < 200)) continue;
     push(src, alt, alt ? 18 : 8);
+  }
+
+  for (const video of allTags(html, "video")) {
+    push(video["src"] ?? video["data-src"], video["title"] ?? title, 52, "video");
+  }
+  for (const source of allTags(html, "source")) {
+    const src = source["src"] ?? source["data-src"];
+    const type = source["type"] ?? "";
+    if (type.startsWith("video/") || /\.(mp4|webm|mov|m4v)(\?|$)/i.test(src ?? ""))
+      push(src, title, 48, "video");
   }
 
   // صور منظمة داخل بيانات JSON-LD (منتجات، مقالات).
@@ -155,6 +203,13 @@ function collectFromPage(html: string, pageUrl: string): SiteAsset[] {
         if (Array.isArray(img)) img.forEach((x) => typeof x === "string" && push(x, nm, 45));
         if (img && typeof img === "object" && typeof (img as { url?: string }).url === "string")
           push((img as { url: string }).url, nm, 45);
+        const type = typeof o["@type"] === "string" ? o["@type"] : "";
+        if (/VideoObject/i.test(type)) {
+          const videoUrl = [o["contentUrl"], o["url"]].find(
+            (value): value is string => typeof value === "string",
+          );
+          push(videoUrl, nm || title, 66, "video");
+        }
         Object.values(o).forEach((v) => walk(v, depth + 1));
       };
       walk(json);
@@ -194,7 +249,7 @@ function internalLinks(html: string, baseUrl: string, limit: number): string[] {
 }
 
 /** يجمع صور الموقع من الصفحة الرئيسية وحتى 5 صفحات داخلية مهمة. */
-export async function harvestSiteImages(rawUrl: string, maxPages = 6): Promise<SiteAsset[]> {
+export async function harvestSiteAssets(rawUrl: string, maxPages = 12): Promise<SiteAsset[]> {
   const home = normalizeUrl(rawUrl);
   if (!home) return [];
   const html = await getHtml(home);
@@ -217,6 +272,97 @@ export async function harvestSiteImages(rawUrl: string, maxPages = 6): Promise<S
     if (!prev || a.weight > prev.weight) byUrl.set(a.url, a);
   }
   return [...byUrl.values()].sort((a, b) => b.weight - a.weight).slice(0, 60);
+}
+
+/** اسم قديم محفوظ للتوافق مع المسارات الحالية. */
+export const harvestSiteImages = harvestSiteAssets;
+
+const cleanMeta = (value: unknown, max = 120): string =>
+  String(value ?? "")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&nbsp;|&#160;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, max);
+
+/**
+ * يبحث في Wikimedia Commons فقط: مصدر عام موثّق يعيد رابط صفحة الأصل والترخيص.
+ * لا نعرض نتيجة بلا رابط ملف مباشر أو بلا صفحة مصدر، ولا نصفها بأنها ملك العلامة.
+ */
+export async function searchCommonsAssets(rawQuery: string): Promise<CommonsAsset[]> {
+  const query = tokens(rawQuery).slice(0, 8).join(" ");
+  if (!query) return [];
+  const search = async (
+    kind: "image" | "video",
+    limit: number,
+    terms: string,
+  ): Promise<CommonsAsset[]> => {
+    try {
+      const params = new URLSearchParams({
+        action: "query",
+        generator: "search",
+        gsrsearch: `${terms} ${kind === "video" ? "filetype:video" : "filetype:bitmap"}`,
+        gsrnamespace: "6",
+        gsrlimit: String(Math.max(limit * 2, 8)),
+        prop: "imageinfo",
+        iiprop: "url|mime|extmetadata",
+        iiurlwidth: kind === "video" ? "640" : "1200",
+        format: "json",
+        origin: "*",
+      });
+      const res = await fetch(`https://commons.wikimedia.org/w/api.php?${params}`, {
+        headers: { "User-Agent": "SahlBot/1.0 (support@sahl.app)", Accept: "application/json" },
+        signal: AbortSignal.timeout(12_000),
+      });
+      if (!res.ok) return [];
+      const json = (await res.json()) as {
+        query?: {
+          pages?: Record<
+            string,
+            {
+              title?: string;
+              imageinfo?: {
+                url?: string;
+                descriptionurl?: string;
+                mime?: string;
+                extmetadata?: Record<string, { value?: string }>;
+              }[];
+            }
+          >;
+        };
+      };
+      return Object.values(json.query?.pages ?? {})
+        .flatMap((page) => {
+          const info = page.imageinfo?.[0];
+          if (!info?.url || !info.descriptionurl) return [];
+          const mime = info.mime ?? "";
+          if (kind === "image" ? !mime.startsWith("image/") : !mime.startsWith("video/")) return [];
+          const meta = info.extmetadata ?? {};
+          return [{
+            url: info.url,
+            alt: cleanMeta(meta["ImageDescription"]?.value || page.title?.replace(/^File:/, ""), 180),
+            pageUrl: info.descriptionurl,
+            weight: 20,
+            kind,
+            license: cleanMeta(meta["LicenseShortName"]?.value || meta["UsageTerms"]?.value || "راجع المصدر"),
+            creator: cleanMeta(meta["Artist"]?.value || meta["Credit"]?.value || "Wikimedia Commons"),
+          }];
+        })
+        .slice(0, limit);
+    } catch {
+      return [];
+    }
+  };
+  const broadQuery = tokens(rawQuery).slice(0, 3).join(" ") || query;
+  let [images, videos] = await Promise.all([
+    search("image", 6, query),
+    search("video", 3, query),
+  ]);
+  // عقول العلامات قد تكون طويلة جداً؛ نوسّع البحث تلقائياً إن لم يطابقها Commons حرفياً.
+  if (!images.length && broadQuery !== query) images = await search("image", 6, broadQuery);
+  if (!videos.length && broadQuery !== query) videos = await search("video", 3, broadQuery);
+  return [...images, ...videos];
 }
 
 const STOP = new Set([

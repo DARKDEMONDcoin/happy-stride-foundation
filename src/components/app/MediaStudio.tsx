@@ -18,7 +18,13 @@ import {
 
 import { supabase } from "@/integrations/supabase/client";
 import { generateMedia } from "@/lib/media.functions";
-import { listSiteAssets, syncSiteAssets, type StoredAsset } from "@/lib/brand-assets.functions";
+import {
+  findPublicBrandAssets,
+  listSiteAssets,
+  syncSiteAssets,
+  type PublicAsset,
+  type StoredAsset,
+} from "@/lib/brand-assets.functions";
 import { ReelStudio } from "@/components/app/ReelStudio";
 import { ChatAttachments } from "@/components/app/ChatAttachments";
 import { cn } from "@/lib/utils";
@@ -33,6 +39,8 @@ export type Attachment = {
 
 /** حتى ١٠ عناصر مع بعض في نفس الرسالة. حدود الحجم تحمي الرفع من الفشل الصامت. */
 const MAX_ATTACHMENTS = 10;
+const MAX_VIDEOS = 4;
+const MAX_DOCUMENTS = 6;
 const MAX_BYTES = 50 * 1024 * 1024;
 /** الملفات (مستندات/جداول/نصوص) تُقرأ بالكامل على الخادم، فنُحدّها بـ٢٥ ميجابايت. */
 const MAX_FILE_BYTES = 25 * 1024 * 1024;
@@ -121,18 +129,28 @@ export function MediaStudio({
   // صور موقع المستخدم الحقيقية — يختار منها مباشرة بدل الصور المولّدة.
   const listAssets = useServerFn(listSiteAssets);
   const syncAssets = useServerFn(syncSiteAssets);
+  const findPublic = useServerFn(findPublicBrandAssets);
   const assetsQuery = useQuery({
     queryKey: ["site-assets", workspaceId],
     enabled: Boolean(workspaceId) && open,
     queryFn: () => listAssets({ data: { workspaceId: workspaceId!, limit: 40 } }),
   });
   const siteAssets: StoredAsset[] = assetsQuery.data?.assets ?? [];
+  const siteImages = siteAssets.filter((asset) => asset.kind === "image").slice(0, 12);
+  const siteVideos = siteAssets.filter((asset) => asset.kind === "video").slice(0, 4);
+  const publicQuery = useQuery({
+    queryKey: ["public-brand-assets", workspaceId, imagePrompt.trim()],
+    enabled: false,
+    queryFn: () =>
+      findPublic({ data: { workspaceId: workspaceId!, query: imagePrompt.trim() || undefined } }),
+  });
+  const publicAssets: PublicAsset[] = publicQuery.data?.assets ?? [];
   const sync = useMutation({
     mutationFn: () => syncAssets({ data: { workspaceId: workspaceId! } }),
     onSuccess: (res) => {
       void assetsQuery.refetch();
-      if (!res?.ok) setError("أضف رابط موقعك في الإعدادات أولاً حتى نسحب صوره.");
-      else if (!res.count) setError("لم نجد صوراً مناسبة في موقعك.");
+      if (!res?.ok) setError("أضف رابط موقعك أو رابطاً في عقل العلامة أولاً حتى نسحب وسائطه.");
+      else if (!res.count) setError("لم نجد صوراً أو فيديوهات أصلية مناسبة في الروابط المحفوظة.");
       else setError(null);
     },
     onError: (e: unknown) => setError(e instanceof Error ? e.message : "تعذّر سحب صور الموقع"),
@@ -140,6 +158,10 @@ export function MediaStudio({
 
   const attach = (url: string, type: "image" | "video") => {
     if (attachments.some((a) => a.url === url) || attachments.length >= MAX_ATTACHMENTS) return;
+    if (type === "video" && attachments.filter((a) => a.type === "video").length >= MAX_VIDEOS) {
+      setError(`الحد الأقصى ${MAX_VIDEOS} فيديوهات في الرسالة الواحدة.`);
+      return;
+    }
     onAttachmentsChange([...attachments, { url, type }]);
   };
 
@@ -154,10 +176,20 @@ export function MediaStudio({
 
     setUploading(picked.length);
     const added: Attachment[] = [];
+    let videoCount = attachments.filter((item) => item.type === "video").length;
+    let documentCount = attachments.filter((item) => item.type === "file").length;
     for (const file of picked) {
       const isVideo = file.type.startsWith("video/");
       const isImage = file.type.startsWith("image/");
       const kind: Attachment["type"] = isVideo ? "video" : isImage ? "image" : "file";
+      if (kind === "video" && videoCount >= MAX_VIDEOS) {
+        setError(`الحد الأقصى ${MAX_VIDEOS} فيديوهات في الرسالة الواحدة.`);
+        continue;
+      }
+      if (kind === "file" && documentCount >= MAX_DOCUMENTS) {
+        setError(`الحد الأقصى ${MAX_DOCUMENTS} ملفات في الرسالة الواحدة.`);
+        continue;
+      }
       const limit = kind === "file" ? MAX_FILE_BYTES : MAX_BYTES;
       if (file.size > limit) {
         setError(
@@ -195,6 +227,8 @@ export function MediaStudio({
           mime: file.type || "application/octet-stream",
           size: file.size,
         });
+        if (kind === "video") videoCount += 1;
+        if (kind === "file") documentCount += 1;
       } catch {
         setError(`تعذّر رفع «${file.name}». أعد المحاولة.`);
       } finally {
@@ -344,7 +378,7 @@ export function MediaStudio({
               </div>
             </div>
             <p className="mt-1.5 text-[0.68rem] text-muted-foreground">
-              حتى ١٠ عناصر مع بعض: صور وفيديوهات حتى {humanSize(MAX_BYTES)} لكل ملف، ومستندات وملفات
+              حتى ١٠ عناصر معاً، منها حتى ٤ فيديوهات و٦ ملفات: صور وفيديوهات حتى {humanSize(MAX_BYTES)} لكل عنصر، ومستندات وملفات
               (PDF · نصوص · CSV · JSON · أكواد) حتى {humanSize(MAX_FILE_BYTES)} — والموظف يقرأ
               محتواها فعلياً وينفّذ عليها ما تطلبه.
             </p>
@@ -383,6 +417,51 @@ export function MediaStudio({
                 if (files.length) void uploadFiles(files);
               }}
             />
+          </div>
+
+          <div className="rounded-xl border border-border bg-background/60 p-2.5">
+            <div className="flex flex-wrap items-center gap-2">
+              <Globe className="size-4 text-muted-foreground" />
+              <span className="text-[0.7rem] font-bold">وسائط عامة مرتبطة بعلامتك</span>
+              <button
+                type="button"
+                disabled={!workspaceId || publicQuery.isFetching}
+                onClick={() => void publicQuery.refetch()}
+                className="ms-auto inline-flex min-h-9 items-center gap-1 rounded-lg border border-border px-2.5 py-1 text-[0.68rem] font-bold hover:bg-secondary disabled:opacity-40"
+              >
+                {publicQuery.isFetching ? <Loader2 className="size-3 animate-spin" /> : <Globe className="size-3" />}
+                ابحث بالإنترنت
+              </button>
+            </div>
+            <p className="mt-1 text-[0.65rem] text-muted-foreground">
+              من Wikimedia Commons حسب عقل العلامة ووصف الصورة، مع إبقاء المصدر والترخيص ظاهرين.
+            </p>
+            {publicAssets.length ? (
+              <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {publicAssets.map((asset) => {
+                  const added = attachments.some((item) => item.url === asset.url);
+                  return (
+                    <div key={asset.url} className="overflow-hidden rounded-lg border border-border bg-background">
+                      <button type="button" onClick={() => attach(asset.url, asset.kind)} className="relative block w-full">
+                        {asset.kind === "image" ? (
+                          <img src={asset.url} alt={asset.alt ?? "صورة عامة"} loading="lazy" className="aspect-video w-full object-cover" />
+                        ) : (
+                          <video src={`${asset.url}#t=0.1`} muted playsInline preload="metadata" className="aspect-video w-full object-cover" />
+                        )}
+                        <span className="absolute inset-x-0 bottom-0 bg-foreground/80 py-1 text-[0.6rem] font-bold text-background">
+                          {added ? "مُرفقة ✓" : "أرفقها"}
+                        </span>
+                      </button>
+                      <a href={asset.pageUrl} target="_blank" rel="noreferrer" className="block truncate px-2 py-1 text-[0.58rem] text-muted-foreground underline" title={`${asset.creator} · ${asset.license}`}>
+                        المصدر · {asset.license}
+                      </a>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : publicQuery.isFetched && !publicQuery.isFetching ? (
+              <p className="mt-2 text-[0.68rem] text-muted-foreground">لم نجد وسائط عامة مناسبة بهذا السياق.</p>
+            ) : null}
           </div>
 
           {imageMode === "manual" ? (
@@ -516,7 +595,7 @@ export function MediaStudio({
           <div className="rounded-xl border border-border bg-background/60 p-2.5">
             <div className="flex flex-wrap items-center gap-2">
               <Globe className="size-4 text-muted-foreground" />
-              <span className="text-[0.7rem] font-bold">صور من موقعك</span>
+              <span className="text-[0.7rem] font-bold">صور من موقعك وروابط العلامة</span>
               <button
                 type="button"
                 disabled={!workspaceId || sync.isPending}
@@ -535,9 +614,9 @@ export function MediaStudio({
                 {siteAssets.length ? "تحديث" : "اسحب صور موقعي"}
               </button>
             </div>
-            {siteAssets.length ? (
+            {siteImages.length ? (
               <div className="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-6">
-                {siteAssets.map((a) => {
+                {siteImages.map((a) => {
                   const added = attachments.some((x) => x.url === a.url);
                   return (
                     <button
@@ -567,7 +646,42 @@ export function MediaStudio({
               </div>
             ) : (
               <p className="mt-1.5 text-[0.68rem] text-muted-foreground">
-                نجلب صور منتجاتك ومقالاتك من موقعك لتستخدمها مباشرة في المنشورات.
+                نجلب صور منتجاتك ومقالاتك من موقعك والروابط المحفوظة في عقل العلامة.
+              </p>
+            )}
+          </div>
+
+          <div className="rounded-xl border border-border bg-background/60 p-2.5">
+            <div className="flex items-center gap-2">
+              <Globe className="size-4 text-muted-foreground" />
+              <span className="text-[0.7rem] font-bold">فيديو من موقعك وروابط العلامة</span>
+              <span className="ms-auto text-[0.65rem] text-muted-foreground">أفضل ٤ فيديوهات</span>
+            </div>
+            {siteVideos.length ? (
+              <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {siteVideos.map((asset) => {
+                  const added = attachments.some((item) => item.url === asset.url);
+                  return (
+                    <button
+                      key={asset.url}
+                      type="button"
+                      onClick={() => attach(asset.url, "video")}
+                      className={cn(
+                        "relative overflow-hidden rounded-lg border text-start",
+                        added ? "border-jade" : "border-border",
+                      )}
+                    >
+                      <video src={`${asset.url}#t=0.1`} muted playsInline preload="metadata" className="aspect-video w-full object-cover" />
+                      <span className="block truncate px-2 py-1 text-[0.62rem] font-bold">
+                        {added ? "مُرفق ✓" : asset.alt || "فيديو من موقعك"}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="mt-1.5 text-[0.68rem] text-muted-foreground">
+                عند تحديث مكتبة موقعك نجلب الفيديوهات الأصلية القابلة للتشغيل من صفحاته أيضاً.
               </p>
             )}
           </div>
@@ -576,7 +690,7 @@ export function MediaStudio({
             workspaceId={workspaceId}
             images={[
               ...results,
-              ...siteAssets.map((a) => a.url),
+              ...siteImages.map((a) => a.url),
               ...attachments.filter((a) => a.type === "image").map((a) => a.url),
             ]}
             aspect={aspect}

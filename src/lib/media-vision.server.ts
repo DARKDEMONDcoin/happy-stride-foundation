@@ -1,14 +1,12 @@
 /**
  * قراءة وسائط المستخدم: نمرّر الصور المرفقة إلى نموذج بصري ونعيد وصفاً نصياً موجزاً
- * لكل صورة، فيستطيع الموظف «رؤية» ما أرفقه المستخدم والبناء عليه بدل تجاهله.
- * الفيديو لا يُحلَّل بصرياً — نذكره بالرابط والاسم فقط.
+ * لكل صورة وفيديو، فيستطيع أي موظف فهم ما أرفقه المستخدم والبناء عليه بدل تجاهله.
  */
 
 const LOVABLE = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const GEMINI = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
 
-const VISION_LOVABLE = "google/gemini-2.5-flash";
-const VISION_GEMINI = "gemini-3.5-flash-lite";
+const MEDIA_MODEL = "google/gemini-3.1-flash-lite";
 
 type Attachment = {
   url: string;
@@ -21,6 +19,7 @@ type Attachment = {
 type Part =
   | { type: "text"; text: string }
   | { type: "image_url"; image_url: { url: string } }
+  | { type: "video_url"; video_url: { url: string } }
   | { type: "file"; file: { filename: string; file_data: string } };
 
 async function callVision(
@@ -34,12 +33,12 @@ async function callVision(
     headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
     body: JSON.stringify({
       model,
-      max_tokens: 700,
+      max_completion_tokens: 1200,
       messages: [
         {
           role: "system",
           content:
-            "أنت محلّل بصري. صِف كل صورة مرفقة بدقة وباختصار بالعربية: ما تحتويه، الأشخاص/المنتجات، أي نص مكتوب داخلها حرفياً، الألوان والجو العام. أعد سطراً لكل صورة يبدأ بـ «صورة N:».",
+            "أنت محلّل وسائط دقيق. حلّل كل صورة وفيديو أو مستند مرفق بالعربية. للصور: المحتوى والأشخاص والمنتجات والنص الظاهر والألوان. للفيديو: تسلسل المشاهد والحركة والكلام أو النص المسموع/الظاهر والمنتجات والرسالة العامة. لا تخمّن ما لا يظهر أو لا يُسمع. افصل كل عنصر بعنوان نوعه ورقمه.",
         },
         { role: "user", content: parts },
       ],
@@ -59,15 +58,15 @@ const MAX_INLINE_BYTES = 6 * 1024 * 1024;
  * النماذج البصرية لا تستطيع جلب الروابط الموقّعة أو المحمية بـ robots،
  * فنجلب البايتات بأنفسنا ونمرّرها كـ data URL.
  */
-async function inlineImage(url: string): Promise<string | null> {
+async function inlineMedia(url: string, expected: "image" | "video"): Promise<string | null> {
   try {
     const res = await fetch(url, {
       headers: { "User-Agent": "Mozilla/5.0 (compatible; SahlMediaReader/1.0)" },
       signal: AbortSignal.timeout(15_000),
     });
     if (!res.ok) return null;
-    const type = res.headers.get("content-type") ?? "image/jpeg";
-    if (!type.startsWith("image/")) return null;
+    const type = (res.headers.get("content-type") ?? `${expected}/mp4`).split(";")[0]!.trim();
+    if (!type.startsWith(`${expected}/`)) return null;
     const buf = await res.arrayBuffer();
     if (buf.byteLength > MAX_INLINE_BYTES) return null;
     const base64 = Buffer.from(buf).toString("base64");
@@ -120,9 +119,9 @@ async function readOneFile(
       ];
       let read = "";
       if (keys.lovable)
-        read = await callVision(LOVABLE, keys.lovable, VISION_LOVABLE, parts).catch(() => "");
+        read = await callVision(LOVABLE, keys.lovable, MEDIA_MODEL, parts).catch(() => "");
       if (!read && keys.gemini)
-        read = await callVision(GEMINI, keys.gemini, VISION_GEMINI, parts).catch(() => "");
+        read = await callVision(GEMINI, keys.gemini, "gemini-3.1-flash-lite", parts).catch(() => "");
       if (read) return `ملف ${index + 1} (${name}) — ما استخرجناه منه:\n${read}`;
       return `ملف ${index + 1} (${name}): تعذّرت قراءة محتواه الآن.`;
     }
@@ -140,11 +139,8 @@ async function readOneFile(
 /** وصف نصي لوسائط المستخدم وملفاته (حتى ١٠ عناصر). */
 export async function describeUserMedia(attachments: Attachment[]): Promise<string> {
   const images = attachments.filter((a) => a.type === "image").slice(0, 10);
-  const videos = attachments.filter((a) => a.type === "video").slice(0, 10);
+  const videos = attachments.filter((a) => a.type === "video").slice(0, 4);
   const files = attachments.filter((a) => a.type === "file").slice(0, 6);
-  const videoNote = videos.length
-    ? videos.map((v, i) => `فيديو ${i + 1}: ${v.alt || v.url}`).join(" · ")
-    : "";
 
   let filesNote = "";
   if (files.length) {
@@ -158,19 +154,22 @@ export async function describeUserMedia(attachments: Attachment[]): Promise<stri
     }
   }
 
-  if (!images.length) return [filesNote, videoNote].filter(Boolean).join(" · ");
+  if (!images.length && !videos.length) return filesNote;
 
-  const inlined = (await Promise.all(images.map((a) => inlineImage(a.url)))).filter(
-    (u): u is string => Boolean(u),
-  );
-  if (!inlined.length) return [filesNote, videoNote].filter(Boolean).join(" · ");
+  const imageParts = (
+    await Promise.all(images.map(async (a) => (await inlineMedia(a.url, "image")) ?? a.url))
+  ).map((url) => ({ type: "image_url" as const, image_url: { url } }));
+  const videoParts = (
+    await Promise.all(videos.map(async (a) => (await inlineMedia(a.url, "video")) ?? a.url))
+  ).map((url) => ({ type: "video_url" as const, video_url: { url } }));
 
   const parts: Part[] = [
     {
       type: "text",
-      text: `صِف هذه ${inlined.length} صورة/صور المرفقة من المستخدم، سطر لكل صورة.`,
+      text: `حلّل ${imageParts.length} صورة و${videoParts.length} فيديو أرفقها المستخدم. اذكر ما تعرفه فعلاً من كل عنصر منفصلاً، واستخرج النص والكلام المهم عند وجوده.`,
     },
-    ...inlined.map((url) => ({ type: "image_url" as const, image_url: { url } })),
+    ...imageParts,
+    ...videoParts,
   ];
 
   try {
@@ -178,14 +177,19 @@ export async function describeUserMedia(attachments: Attachment[]): Promise<stri
     const keys = await providerKeys();
     let described = "";
     if (keys.lovable) {
-      described = await callVision(LOVABLE, keys.lovable, VISION_LOVABLE, parts).catch(() => "");
+      described = await callVision(LOVABLE, keys.lovable, MEDIA_MODEL, parts).catch(() => "");
     }
     if (!described && keys.gemini) {
-      described = await callVision(GEMINI, keys.gemini, VISION_GEMINI, parts).catch(() => "");
+      described = await callVision(GEMINI, keys.gemini, "gemini-3.1-flash-lite", parts).catch(
+        () => "",
+      );
     }
-    return [described, filesNote, videoNote].filter(Boolean).join(" · ");
+    return [described, filesNote].filter(Boolean).join("\n\n");
   } catch (error) {
     console.warn("[media-vision] failed:", error instanceof Error ? error.message : error);
-    return [filesNote, videoNote].filter(Boolean).join(" · ");
+    const unavailable = videos.length
+      ? videos.map((v, i) => `فيديو ${i + 1} (${v.alt || "مرفق"}): تعذّر تحليل محتواه الآن.`).join("\n")
+      : "";
+    return [filesNote, unavailable].filter(Boolean).join("\n\n");
   }
 }

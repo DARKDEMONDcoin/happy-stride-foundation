@@ -164,6 +164,17 @@ export const askEmployeeInput = z.object({
       }),
     )
     .max(10)
+    .superRefine((items, ctx) => {
+      if (items.filter((item) => item.type === "video").length > 4)
+        ctx.addIssue({ code: "custom", message: "الحد الأقصى ٤ فيديوهات." });
+      if (items.filter((item) => item.type === "file").length > 6)
+        ctx.addIssue({ code: "custom", message: "الحد الأقصى ٦ ملفات." });
+      items.forEach((item, index) => {
+        const max = item.type === "file" ? 25 * 1024 * 1024 : 50 * 1024 * 1024;
+        if (item.size && item.size > max)
+          ctx.addIssue({ code: "custom", path: [index, "size"], message: "حجم المرفق يتجاوز الحد المسموح." });
+      });
+    })
     .optional(),
   /** تحكّم المستخدم في الصورة التلقائية: تلقائي · إيقاف · وصف يكتبه بنفسه. */
   imageMode: z.enum(["auto", "off", "manual"]).optional(),
@@ -813,7 +824,7 @@ export async function runEmployeeTurn(
       .reverse()
       .map((m) => ({ role: m.role === "user" ? "user" : "assistant", content: m.body }));
 
-    // قراءة فعلية لوسائط المستخدم: نصف الصور بنموذج بصري ليعتمد الموظف على محتواها.
+    // قراءة فعلية لكل الوسائط: صور وفيديوهات ومستندات، بنفس المسار لكل الموظفين.
     let mediaRead = "";
     if (attachments.length) {
       try {
@@ -827,7 +838,7 @@ export async function runEmployeeTurn(
     // نُعلم الموظف بوسائط المستخدم وبقراره حول الصورة حتى يبني عليها بدل تجاهلها.
     const mediaNote = [
       attachments.length
-        ? `(المستخدم أرفق ${attachments.filter((a) => a.type === "image").length} صورة و${attachments.filter((a) => a.type === "video").length} فيديو و${attachments.filter((a) => a.type === "file").length} ملف مع الطلب — اعتمدها كما هي ولا تطلب غيرها.)`
+        ? `(المستخدم أرفق ${attachments.filter((a) => a.type === "image").length} صورة و${attachments.filter((a) => a.type === "video").length} فيديو و${attachments.filter((a) => a.type === "file").length} ملف مع الطلب — افهم محتواها المقروء أدناه ونفّذ المطلوب، ولا تدّعِ معرفة جزء تعذّر تحليله.)`
         : "",
       mediaRead
         ? `(محتوى وسائط وملفات المستخدم كما قرأها النظام حرفياً — اعتمد عليه ونفّذ ما طلبه منه مباشرة، وحلّله إن سُئلت عنه: ${mediaRead.slice(0, 12_000)})`
@@ -1371,7 +1382,7 @@ export async function runEmployeeTurn(
 
     // صور من موقع المستخدم: اختيارية تماماً — تظهر فقط حين يطلبها في رسالته.
     const wantsSiteImages =
-      /(صور|صورة|صور\s*من)\s*(من\s*)?(موقعي|الموقع|موقعنا)|صور\s+موقع|من\s+صور\s+موقعي|استخدم\s+صور\s+موقع/u.test(
+      /(?=.*(?:موقعي|الموقع|موقعنا|website|site))(?=.*(?:صور?|فيديوهات?|image|photo|video))|(?:صور|فيديوهات?)\s+موقع|(?:من|استخدم)\s+(?:صور|فيديوهات?)\s+(?:من\s+)?موقعي/iu.test(
         data.message ?? "",
       );
     let siteSuggestions: { url: string; alt: string; pageUrl: string }[] = [];
@@ -1379,7 +1390,7 @@ export async function runEmployeeTurn(
       try {
         const { data: stored } = await supabase
           .from("site_assets")
-          .select("url, alt, page_url, weight")
+          .select("url, alt, page_url, weight, kind")
           .eq("workspace_id", data.workspaceId)
           .order("weight", { ascending: false })
           .limit(120);
@@ -1389,12 +1400,13 @@ export async function runEmployeeTurn(
           alt: a.alt ?? "",
           pageUrl: a.page_url ?? "",
           weight: a.weight ?? 0,
+          kind: a.kind === "video" ? ("video" as const) : ("image" as const),
         }));
 
         // أول مرة: نلتقط صور الموقع الآن ثم نحفظها للمرات القادمة.
         if (!pool.length && workspace?.website) {
-          const { harvestSiteImages } = await import("./brand-assets.server");
-          const found = await harvestSiteImages(workspace.website, 10);
+          const { harvestSiteAssets } = await import("./brand-assets.server");
+          const found = await harvestSiteAssets(workspace.website, 16);
           if (found.length) {
             await supabase.from("site_assets").upsert(
               found.map((a) => ({
@@ -1404,7 +1416,7 @@ export async function runEmployeeTurn(
                 alt: a.alt || null,
                 weight: a.weight,
                 source: "website",
-                kind: "image",
+                kind: a.kind,
               })),
               { onConflict: "workspace_id,url" },
             );
@@ -1413,6 +1425,7 @@ export async function runEmployeeTurn(
               alt: a.alt,
               pageUrl: a.pageUrl,
               weight: a.weight,
+              kind: a.kind,
             }));
           }
         }
@@ -1420,7 +1433,7 @@ export async function runEmployeeTurn(
         if (pool.length) {
           const { rankAssets } = await import("./brand-assets.server");
           const query = `${data.message}\n${deliverables.map((d) => `${d.title ?? ""} ${d.body ?? ""}`).join("\n")}`;
-          siteSuggestions = rankAssets(query, pool, 12).map((a) => ({
+          siteSuggestions = rankAssets(query, pool.filter((a) => a.kind === "image"), 6).map((a) => ({
             url: a.url,
             alt: a.alt,
             pageUrl: a.pageUrl,
