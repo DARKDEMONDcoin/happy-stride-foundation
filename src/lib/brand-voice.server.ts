@@ -239,6 +239,16 @@ export async function collectSiteText(
 /* --------------------------- التحليل الأسلوبي --------------------------- */
 
 const EMOJI_RE = /\p{Extended_Pictographic}/gu;
+const UNICODE_WORD_BOUNDARY = "(?:(?<![\\p{L}\\p{N}_])(?=[\\p{L}\\p{N}_])|(?<=[\\p{L}\\p{N}_])(?![\\p{L}\\p{N}_]))";
+
+function unicodeWordRegex(re: RegExp): RegExp {
+  return new RegExp(re.source.replaceAll("\\b", UNICODE_WORD_BOUNDARY), "gu");
+}
+
+function countArabicTerms(value: string, terms: string[]): number {
+  const alternatives = terms.map((term) => term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|");
+  return value.match(new RegExp(`${UNICODE_WORD_BOUNDARY}(?:${alternatives})${UNICODE_WORD_BOUNDARY}`, "gu"))?.length ?? 0;
+}
 
 const DIALECT_MARKERS: Record<StyleStats["dialect"], RegExp[]> = {
   egyptian: [
@@ -363,7 +373,7 @@ export function analyzeStyle(text: string, taglines: string[] = []): StyleStats 
   const dialectScores = (Object.keys(DIALECT_MARKERS) as StyleStats["dialect"][]).map((d) => ({
     d,
     score: DIALECT_MARKERS[d].reduce(
-      (acc, re) => acc + (raw.match(new RegExp(re.source, "g"))?.length ?? 0),
+      (acc, re) => acc + (raw.match(unicodeWordRegex(re))?.length ?? 0),
       0,
     ),
   }));
@@ -383,11 +393,9 @@ export function analyzeStyle(text: string, taglines: string[] = []): StyleStats 
     dialect = "mixed";
 
   // صيغة المخاطبة
-  const you = (raw.match(/\b(أنت|انت|لك|ليك|عندك|تقدر|يمكنك|خلّيك|خليك|إنت)\b/g) ?? []).length;
-  const plural = (raw.match(/\b(أنتم|انتم|لكم|عندكم|يمكنكم|حضراتكم|تفضلوا|تقدروا)\b/g) ?? [])
-    .length;
-  const we = (raw.match(/\b(نحن|إحنا|احنا|نقدم|نقدّم|فريقنا|بنقدم|عندنا|نوفر|نوفّر)\b/g) ?? [])
-    .length;
+  const you = countArabicTerms(raw, ["أنت", "انت", "لك", "ليك", "عندك", "تقدر", "يمكنك", "خلّيك", "خليك", "إنت"]);
+  const plural = countArabicTerms(raw, ["أنتم", "انتم", "لكم", "عندكم", "يمكنكم", "حضراتكم", "تفضلوا", "تقدروا"]);
+  const we = countArabicTerms(raw, ["نحن", "إحنا", "احنا", "نقدم", "نقدّم", "فريقنا", "بنقدم", "عندنا", "نوفر", "نوفّر"]);
   const addressing: StyleStats["addressing"] =
     Math.max(you, plural, we) === 0
       ? "محايد"
@@ -531,12 +539,16 @@ export async function synthesizeVoice(
     schema,
   ].join("\n");
 
-  const out = await freeChat("", [
-    { role: "system", content: system },
-    { role: "user", content: user },
-  ]);
-  const parsed = extractJson<BrandVoiceProfile>(out);
-  if (parsed && parsed.summary) return parsed;
+  try {
+    const out = await freeChat("", [
+      { role: "system", content: system },
+      { role: "user", content: user },
+    ]);
+    const parsed = extractJson<BrandVoiceProfile>(out);
+    if (parsed && parsed.summary) return parsed;
+  } catch {
+    // التحليل الحتمي أدناه يحافظ على صوت قابل للاستخدام عند تعذّر خدمة التحليل.
+  }
 
   // احتياطي حتمي إن تعذّر التحليل بالنموذج
   return {
