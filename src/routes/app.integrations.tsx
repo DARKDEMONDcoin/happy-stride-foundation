@@ -175,8 +175,8 @@ function IntegrationsPage() {
       );
       return;
     }
-    // واتساب له مسار ربط مخصص لا يفتح موصل Pipedream القديم ذي الحقول اليدوية.
-    if (provider === "whatsapp") {
+    // واتساب وتيليجرام لهما مسارا ربط مباشران مخصصان لا يفتحان موصل Pipedream.
+    if (provider === "whatsapp" || provider === "telegram") {
       setDetail(provider);
       return;
     }

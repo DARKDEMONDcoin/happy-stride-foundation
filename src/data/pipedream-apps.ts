@@ -307,20 +307,6 @@ export const pipedreamApps: PipedreamApp[] = [
     },
   },
   {
-    provider: "telegram",
-    slug: "telegram_bot_api",
-    label: "تيليجرام",
-    publishComponent: "telegram_bot_api-send-text-message-or-reply",
-    accountProp: "telegramBotApi",
-    actions: {
-      send: {
-        component: "telegram_bot_api-send-text-message-or-reply",
-        accountProp: "telegramBotApi",
-        label: "إرسال رسالة تيليجرام",
-      },
-    },
-  },
-  {
     provider: "figma",
     slug: "figma",
     label: "فيجما",
