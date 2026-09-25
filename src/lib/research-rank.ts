@@ -102,6 +102,18 @@ const words = (s: string): string[] =>
     .map((w) => (w.length > 4 && w.startsWith("ال") ? w.slice(2) : w))
     .filter(Boolean);
 
+/** أحدث سنة معقولة مذكورة في النص (2000..السنة الحالية)، أو undefined. */
+const SCHOLARLY = /^(arXiv|OpenAlex|Crossref|Europe PMC|Semantic Scholar|PubMed)$/i;
+
+export function inferYear(text: string, now = new Date().getFullYear()): number | undefined {
+  let best: number | undefined;
+  for (const m of text.matchAll(/(?<!\d)(20\d{2})(?!\d)/g)) {
+    const y = Number(m[1]);
+    if (y <= now && (!best || y > best)) best = y;
+  }
+  return best;
+}
+
 export function countMatches(haystack: string, tokens: string[]): number {
   if (!tokens.length) return 0;
   const ws = new Set(words(haystack));
@@ -153,7 +165,7 @@ const fingerprint = (title: string): string =>
  */
 function rankPass(
   findings: Finding[],
-  opts: { topic?: string; aux?: string; max?: number; alt?: string } = {},
+  opts: { topic?: string; aux?: string; max?: number; alt?: string; fresh?: boolean } = {},
   /** تمرير متساهل: يُستخدم فقط حين يعود التشديد بحصيلة شبه فارغة. */
   relax = false,
 ): RankedFinding[] {
@@ -195,7 +207,13 @@ function rankPass(
       if (weight <= 5 && titleHits(f, [...core, ...aux]) < 1) continue;
       // (4) مقال موسوعي لا يكون دليلاً إلا إن كان **عنوانه** عن موضوعنا؛
       //     ورود اللفظ داخل مقال عن شيء آخر مصادفة لا دليل.
-      if (ENCYCLOPEDIC.has(f.source) && titleHits(f, core) < 1) continue;
+      //     موضوع متعدد الكلمات: العنوان يغطي نصفه على الأقل — «تصميم مواقع الويب»
+      //     ليست دليلاً على «اتجاهات تصميم الشعارات». ويكيبيديا عبر بحث الويب تُعامل بالمثل.
+      const ency = ENCYCLOPEDIC.has(f.source) || /(^|\.)wikipedia\.org/i.test(domainOf(f.url));
+      if (ency && titleHits(f, core) < Math.max(1, Math.ceil(core.length / 2))) continue;
+      // (5) ورقة بحثية دليل فقط إن كان عنوانها يغطي معظم الموضوع؛ «Quantum-Well Perovskites»
+      //     ليست شرحاً لـ«الحوسبة الكمومية». التمرير المتساهل يعيدها إن شحّت الأدلة.
+      if (!relax && SCHOLARLY.test(f.source) && core.length >= 2 && titleHits(f, core) < Math.ceil(core.length * 0.6)) continue;
     }
     const key = normalizeUrl(f.url);
 
@@ -206,7 +224,13 @@ function rankPass(
     score += coverage * 3;
     score += aux.length ? (hits(f, aux) / aux.length) * 1.5 : 0;
     score += titleHits(f, core) > 0 ? 1.5 : 0;
-    if (f.year) score -= Math.min(4, Math.max(0, year - f.year) * 0.8);
+    // نتائج الويب لا تحمل سنة: نستنتجها من أحدث سنة مذكورة في العنوان/المقتطف.
+    const seenYear = f.year ?? inferYear(`${f.title} ${f.snippet}`, year);
+    if (seenYear) {
+      const age = Math.max(0, year - seenYear);
+      // في الأسئلة اللحظية («اليوم»، «2026») صفحة 2021 أو 2024 تكاد تكون خطأ لا دليلاً.
+      score -= opts.fresh ? Math.min(9, age * 3) : Math.min(4, age * 0.8);
+    }
     if (HIGH_SIGNAL.test(f.url)) score += 2;
     if (LOW_SIGNAL.test(f.url)) score -= 3;
     if (f.snippet.length > 60) score += 0.5;
@@ -255,7 +279,7 @@ function rankPass(
  */
 export function rankFindings(
   findings: Finding[],
-  opts: { topic?: string; aux?: string; max?: number; alt?: string } = {},
+  opts: { topic?: string; aux?: string; max?: number; alt?: string; fresh?: boolean } = {},
 ): RankedFinding[] {
   const strict = rankPass(findings, opts, false);
   const evidence = strict.filter((r) => r.kind !== "context").length;
