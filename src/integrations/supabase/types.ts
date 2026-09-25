@@ -358,34 +358,43 @@ export type Database = {
       }
       command_links: {
         Row: {
+          active_employee: string | null
           channel: string
+          conversation_ids: Json
           created_at: string
           external_id: string
           id: string
           label: string | null
           last_seen_at: string | null
+          last_update_id: number | null
           role: string
           status: string
           workspace_id: string
         }
         Insert: {
+          active_employee?: string | null
           channel?: string
+          conversation_ids?: Json
           created_at?: string
           external_id: string
           id?: string
           label?: string | null
           last_seen_at?: string | null
+          last_update_id?: number | null
           role?: string
           status?: string
           workspace_id: string
         }
         Update: {
+          active_employee?: string | null
           channel?: string
+          conversation_ids?: Json
           created_at?: string
           external_id?: string
           id?: string
           label?: string | null
           last_seen_at?: string | null
+          last_update_id?: number | null
           role?: string
           status?: string
           workspace_id?: string
