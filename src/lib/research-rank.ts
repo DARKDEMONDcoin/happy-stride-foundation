@@ -231,7 +231,7 @@ function rankPass(
       if (ency && titleHits(f, core) < Math.max(1, Math.ceil(core.length / 2))) continue;
       // (5) ورقة بحثية دليل فقط إن كان عنوانها يغطي معظم الموضوع؛ «Quantum-Well Perovskites»
       //     ليست شرحاً لـ«الحوسبة الكمومية». التمرير المتساهل يعيدها إن شحّت الأدلة.
-      if (SCHOLARLY.test(f.source) && core.length >= 2 && titleHits(f, core) < Math.ceil(core.length * (relax ? 0.5 : 0.6))) continue;
+      if (SCHOLARLY.test(f.source) && core.length >= 2 && titleHits(f, core) < Math.ceil(core.length * 0.6)) continue;
     }
     const key = normalizeUrl(f.url);
 
