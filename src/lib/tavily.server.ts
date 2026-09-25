@@ -29,11 +29,19 @@ export function tavilyAvailable(): boolean {
 
 export async function tavilySearch(
   query: string,
-  opts: { news?: boolean; max?: number; timeoutMs?: number } = {},
+  opts: {
+    news?: boolean;
+    topic?: "general" | "news" | "finance";
+    timeRange?: "day" | "week" | "month" | "year" | undefined;
+    country?: string | undefined;
+    max?: number;
+    timeoutMs?: number;
+  } = {},
 ): Promise<Finding[]> {
   const q = query.trim().replace(/\s+/g, " ").slice(0, 380);
   if (q.length < 3) return [];
-  const key = `${opts.news ? "n" : "g"}|${q.toLowerCase()}`;
+  const topic = opts.topic ?? (opts.news ? "news" : "general");
+  const key = `${topic}|${opts.timeRange ?? ""}|${q.toLowerCase()}`;
   const hit = cache.get(key);
   if (hit && Date.now() - hit.at < CACHE_TTL) return hit.rows;
   const running = inflight.get(key);
@@ -42,6 +50,8 @@ export async function tavilySearch(
 
   const apiKey = process.env["TAVILY_API_KEY"]!;
   used++;
+  const COUNTRIES: Record<string, string> = { EG: "egypt", SA: "saudi arabia", AE: "united arab emirates", KW: "kuwait", QA: "qatar", JO: "jordan", MA: "morocco", US: "united states", GB: "united kingdom" };
+  const country = topic === "general" && opts.country ? COUNTRIES[opts.country.toUpperCase()] : undefined;
   const job = (async () => {
     try {
       const res = await fetch("https://api.tavily.com/search", {
@@ -50,8 +60,9 @@ export async function tavilySearch(
         body: JSON.stringify({
           query: q,
           search_depth: "basic",
-          topic: opts.news ? "news" : "general",
-          ...(opts.news ? { days: 7 } : {}),
+          topic,
+          ...(opts.timeRange ? { time_range: opts.timeRange } : {}),
+          ...(country ? { country } : {}),
           max_results: opts.max ?? 6,
           include_answer: false,
         }),
