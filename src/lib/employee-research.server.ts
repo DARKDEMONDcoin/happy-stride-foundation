@@ -76,6 +76,16 @@ const ANGLES: Record<string, (t: string, y: number) => string[]> = {
   nour: (t, y) => [`${t} ${y}`, `${t} أفضل الممارسات`, `${t} منافسون`],
 };
 
+/** زاوية التخصص بلغة الموضوع (غالباً الإنجليزية) — موظف واحد لكل زاوية، بالتساوي. */
+const FOREIGN_ANGLES: Record<string, (q: string, y: number) => string> = {
+  adam: (q, y) => `${q} benchmarks statistics ${y}`,
+  sam: (q, y) => `${q} pricing comparison ${y}`,
+  dana: (q, y) => `${q} design trends examples ${y}`,
+  eva: (q, y) => `${q} email benchmarks best practices ${y}`,
+  sonny: (q, y) => `${q} social media trends ${y}`,
+  nour: (q, y) => `${q} guide best practices ${y}`,
+};
+
 export type ResearchOpts = {
   industry?: string | undefined;
   city?: string | undefined;
@@ -105,7 +115,8 @@ function openSourcesFor(
    * استعلام عربي هناك لا يعيد فراغاً بل يعيد نتائج عشوائية تبدو كأدلة — وهذا أسوأ.
    * المقابل يأتي من معجمنا، وإلا فمن ترجمة ويكيبيديا الموثّقة، وإلا فالصمت.
    */
-  const en = latinQuery(`${topic} ${ctx.industry}`) || (ctx.bridged ?? "");
+  // الترجمة الذكية أدق من المعجم (تفهم الجملة لا الكلمات)، والمعجم احتياطي.
+  const en = ctx.bridged || latinQuery(`${topic} ${ctx.industry}`);
   const noEn: () => Promise<Finding[]> = () => Promise.resolve([]);
   const en1 = (fn: (q: string) => Promise<Finding[]>) => (en ? () => fn(en) : noEn);
 
@@ -269,17 +280,25 @@ export async function employeeResearch(
    * ترجمته الموثّقة. بدون هذا تصمت كل المصادر العالمية أمام أي سؤال عربي
    * خارج مصطلحات التسويق — وهي أغلب أسئلة المستخدمين.
    */
-  const bridged = latinQuery(seed)
-    ? ""
-    : await (await import("./open-data-plus.server")).bridgeToEnglish(seed).catch(() => "");
+  const { translateSearch } = await import("./search-translate.server");
+  const tr = await translateSearch(seed);
+  const bridged = tr.query;
   const context = [seed, opts.industry ?? "", opts.city ?? ""].filter(Boolean).join(" ").trim();
   // سؤال عن العالم (شخص، خبر، بورصة، رياضة، صحة) لا تُلصق به زوايا التسويق:
   // «أخبار البورصة + تكلفة النقرة» تُفسد النتائج بدل أن تثريها.
   const { classifySearch: cls } = await import("./search-intent");
   const worldQ = cls(seed).kinds.some((k) => ["news", "sports", "health", "science", "entity", "finance"].includes(k));
-  const angles = worldQ
-    ? [seed, `${seed} ${year}`]
-    : (ANGLES[employeeId] ?? ANGLES["nour"]!)(context, year);
+  const arAngles = worldQ ? [seed, `${seed} ${year}`] : (ANGLES[employeeId] ?? ANGLES["nour"]!)(context, year);
+  /**
+   * بحث بلغة الموضوع الأنسب — لكل الموظفين بالتساوي. حين يكون المحتوى العالمي
+   * أغنى بالإنجليزية (أو بلغة أخرى) نبحث بها بجانب العربي، ثم يشرح الموظف بالعربية.
+   */
+  const foreign = bridged
+    ? worldQ
+      ? [bridged]
+      : [bridged, (FOREIGN_ANGLES[employeeId] ?? FOREIGN_ANGLES["nour"]!)(bridged, year)]
+    : [];
+  const angles = [...foreign, ...arAngles].slice(0, 5);
 
   type Chunk = { part: string; used: string; findings?: Finding[] };
 
