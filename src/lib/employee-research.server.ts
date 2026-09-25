@@ -388,7 +388,9 @@ export async function employeeResearch(
   const worldly = intent.kinds.some((k) => ["news", "sports", "health", "science", "entity", "finance"].includes(k));
   const tq = worldly ? seed : context;
   const tOpts = { topic: intent.tavilyTopic, timeRange: intent.timeRange, country: opts.country };
-  let tavilyUsed = false;
+  // نص بلا كلمات حقيقية (لوحة مفاتيح عشوائية): لا نحرق من حصة Tavily المدفوعة عليه.
+  const { looksLikeGibberish } = await import("./search-intent");
+  let tavilyUsed = looksLikeGibberish(seed);
   if (intent.tavilyFirst && tavilyAvailable()) {
     tavilyUsed = true;
     jobs.unshift(async (): Promise<Chunk | null> => {
@@ -413,6 +415,8 @@ export async function employeeResearch(
         max: 14,
         // سؤال لحظي أو سؤال يذكر سنة: صفحة مؤرخة بسنة قديمة لا تتصدّر.
         fresh: intent.fresh || /\b20\d{2}\b/.test(seed),
+        // سؤال لحظي فعلاً (سعر/خبر الآن): عنوان المصدر المتوسط يحمل معظم الموضوع.
+        live: intent.fresh,
       },
     );
   // كل ما هو نتائج مصنّفة يمر على الترجيح معاً: مصدر واحد قوي يتقدّم على عشرة ضعيفة.

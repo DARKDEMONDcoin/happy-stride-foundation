@@ -79,11 +79,33 @@ export const normalizeText = (s: string): string =>
     .replace(/\s+/g, " ")
     .trim();
 
+/** كلمات الزمن تحدد الحداثة لا الموضوع: «سعر السمك اليوم» لا يصبح دليلاً على «سعر الدولار اليوم». */
+const TIME_WORDS = new Set(["اليوم", "النهارده", "الان", "الآن", "حاليا", "today", "now", "latest", "current"]);
+const MONTHS = [
+  ["يناير", "january"], ["فبراير", "february"], ["مارس", "march"], ["ابريل", "april"], ["مايو", "may"], ["يونيو", "june"],
+  ["يوليو", "july"], ["اغسطس", "august"], ["سبتمبر", "september"], ["اكتوبر", "october"], ["نوفمبر", "november"], ["ديسمبر", "december"],
+];
+/** العنوان يذكر شهراً غير الحالي/السابق ← صفحة قديمة غالباً ولو لم تذكر السنة. */
+export function staleMonth(title: string, now = new Date()): boolean {
+  const t = ` ${normalizeText(title)} `;
+  const cur = now.getMonth();
+  // تاريخ رقمي «1-2-2026» أو «2026-02-01»: الشهر فيه غير الحالي/السابق ← قديم.
+  const d = /(?<!\d)(\d{1,2})[-/.](\d{1,2})[-/.](20\d{2})(?!\d)/.exec(title) ?? null;
+  if (d) {
+    const mo = Number(d[2]) - 1;
+    if (mo >= 0 && mo < 12 && mo !== cur && mo !== (cur + 11) % 12) return true;
+  }
+  return MONTHS.some(([ar, en], i) => {
+    if (i === cur || i === (cur + 11) % 12) return false;
+    return t.includes(` ${ar} `) || (en !== "may" && t.includes(` ${en} `));
+  });
+}
+
 export const topicTokens = (topic: string): string[] =>
   [...new Set(normalizeText(topic).split(" "))].filter(
     // السنة وحدها ليست موضوعاً: «2026» تظهر في كل صفحة على الإنترنت هذا العام،
     // فلو عددناها صلة تسلّل إلينا أي شيء.
-    (w) => w.length > 2 && !AR_STOP.has(w) && !/^\d+$/.test(w),
+    (w) => w.length > 2 && !AR_STOP.has(w) && !TIME_WORDS.has(w) && !/^\d+$/.test(w),
   );
 
 /**
@@ -96,10 +118,17 @@ export const topicTokens = (topic: string): string[] =>
  * «المصري» في «المتحف المصري الكبير»، فيتسلل مقال لا علاقة له بالموضوع.
  * نسمح بلاحقة قصيرة (جمع أو نسبة) ولا نسمح بأكثر.
  */
+/** نزع أداة التعريف وحروف العطف/الجر الملتصقة بها: «والاقتصاد» و«بالاقتصاد» و«الاقتصاد» = «اقتصاد». */
+const stem = (w: string): string => {
+  const m = /^(وال|بال|فال|كال|لل)/.exec(w);
+  if (m && w.length - m[0].length >= 3) return w.slice(m[0].length);
+  return w.length > 4 && w.startsWith("ال") ? w.slice(2) : w;
+};
+
 const words = (s: string): string[] =>
   normalizeText(s)
     .split(" ")
-    .map((w) => (w.length > 4 && w.startsWith("ال") ? w.slice(2) : w))
+    .map(stem)
     .filter(Boolean);
 
 /** أحدث سنة معقولة مذكورة في النص (2000..السنة الحالية)، أو undefined. */
@@ -118,7 +147,8 @@ export function countMatches(haystack: string, tokens: string[]): number {
   if (!tokens.length) return 0;
   const ws = new Set(words(haystack));
   const list = [...ws];
-  return tokens.filter(
+  // الكلمة المطلوبة تُجذَّع بنفس قاعدة النص، وإلا لا تطابق «الاقتصاد» أبداً «اقتصاد».
+  return tokens.map((t) => stem(t)).filter(
     (t) =>
       ws.has(t) ||
       // اللاحقة القصيرة تُسامَح للكلمات الطويلة فقط: «اعلانات» و«اعلاناتك» شيء واحد،
@@ -165,7 +195,7 @@ const fingerprint = (title: string): string =>
  */
 function rankPass(
   findings: Finding[],
-  opts: { topic?: string; aux?: string; max?: number; alt?: string; fresh?: boolean } = {},
+  opts: { topic?: string; aux?: string; max?: number; alt?: string; fresh?: boolean; live?: boolean } = {},
   /** تمرير متساهل: يُستخدم فقط حين يعود التشديد بحصيلة شبه فارغة. */
   relax = false,
 ): RankedFinding[] {
@@ -205,6 +235,8 @@ function rankPass(
       //     وإلا فهي صفحة عن شيء آخر ورد فيه لفظنا عرَضاً.
       // تبقى سارية حتى في التمرير المتساهل: التساهل يوسّع الصلة ولا يلغيها.
       if (weight <= 5 && titleHits(f, [...core, ...aux]) < 1) continue;
+      // سؤال لحظي من مصدر متوسط: العنوان يحمل الموضوع كله تقريباً (ينقصه كلمة على الأكثر).
+      if (opts.live && weight <= 5 && core.length >= 3 && titleHits(f, core) < Math.min(3, Math.ceil(core.length * 0.66))) continue;
       // (4) مقال موسوعي لا يكون دليلاً إلا إن كان **عنوانه** عن موضوعنا؛
       //     ورود اللفظ داخل مقال عن شيء آخر مصادفة لا دليل.
       //     موضوع متعدد الكلمات: العنوان يغطي نصفه على الأقل — «تصميم مواقع الويب»
@@ -213,7 +245,7 @@ function rankPass(
       if (ency && titleHits(f, core) < Math.max(1, Math.ceil(core.length / 2))) continue;
       // (5) ورقة بحثية دليل فقط إن كان عنوانها يغطي معظم الموضوع؛ «Quantum-Well Perovskites»
       //     ليست شرحاً لـ«الحوسبة الكمومية». التمرير المتساهل يعيدها إن شحّت الأدلة.
-      if (!relax && SCHOLARLY.test(f.source) && core.length >= 2 && titleHits(f, core) < Math.ceil(core.length * 0.6)) continue;
+      if (SCHOLARLY.test(f.source) && core.length >= 2 && titleHits(f, core) < Math.ceil(core.length * 0.75)) continue;
     }
     const key = normalizeUrl(f.url);
 
@@ -231,6 +263,7 @@ function rankPass(
       // في الأسئلة اللحظية («اليوم»، «2026») صفحة 2021 أو 2024 تكاد تكون خطأ لا دليلاً.
       score -= opts.fresh ? Math.min(9, age * 3) : Math.min(4, age * 0.8);
     }
+    if (opts.fresh && !(seenYear && seenYear < year) && staleMonth(f.title)) score -= 5;
     if (HIGH_SIGNAL.test(f.url)) score += 2;
     if (LOW_SIGNAL.test(f.url)) score -= 3;
     if (f.snippet.length > 60) score += 0.5;
@@ -279,7 +312,7 @@ function rankPass(
  */
 export function rankFindings(
   findings: Finding[],
-  opts: { topic?: string; aux?: string; max?: number; alt?: string; fresh?: boolean } = {},
+  opts: { topic?: string; aux?: string; max?: number; alt?: string; fresh?: boolean; live?: boolean } = {},
 ): RankedFinding[] {
   const strict = rankPass(findings, opts, false);
   const evidence = strict.filter((r) => r.kind !== "context").length;
