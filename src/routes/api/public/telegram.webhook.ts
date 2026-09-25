@@ -8,6 +8,7 @@ import { secretsMatch } from "@/lib/timing-safe";
  * حيث نستنتج مساحة العمل من المحادثة نفسها. الأمان: سرّ مشتق من توكن البوت.
  */
 type TgUpdate = {
+  update_id?: number;
   message?: TgMessage;
   edited_message?: TgMessage;
   channel_post?: TgMessage;
@@ -16,8 +17,14 @@ type TgUpdate = {
 type TgMessage = {
   chat?: { id?: number; title?: string; username?: string; type?: string };
   from?: { id?: number };
+  message_id?: number;
   text?: string;
   caption?: string;
+  voice?: { file_id: string; duration?: number; mime_type?: string };
+  audio?: { file_id: string; duration?: number; mime_type?: string; file_name?: string };
+  video_note?: { file_id: string; duration?: number };
+  photo?: { file_id: string; file_size?: number }[];
+  document?: { file_id: string; mime_type?: string; file_name?: string; file_size?: number };
 };
 
 export const Route = createFileRoute("/api/public/telegram/webhook")({
@@ -87,6 +94,19 @@ export const Route = createFileRoute("/api/public/telegram/webhook")({
 
         const text = (message.text ?? message.caption ?? "").trim();
         try {
+          // محادثة المالك الخاصة: فريق سهل كامل (نص/صوت/صور/ملفات) بعقل الموقع نفسه.
+          // منشورات القنوات والمحادثات غير المربوطة تبقى على المسار القديم.
+          const isChannel = Boolean(update.channel_post ?? update.edited_channel_post);
+          if (!isChannel && !update.edited_message) {
+            const { handleTelegramTeam } = await import("@/lib/telegram-team.server");
+            const handled = await handleTelegramTeam(supabaseAdmin, {
+              botToken,
+              chatId,
+              ...(typeof update.update_id === "number" ? { updateId: update.update_id } : {}),
+              message,
+            });
+            if (handled) return Response.json({ ok: true });
+          }
           if (!text) {
             await telegramReply(
               botToken,
