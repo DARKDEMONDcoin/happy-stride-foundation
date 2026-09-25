@@ -230,7 +230,7 @@ function rankPass(
       // تبقى سارية حتى في التمرير المتساهل: التساهل يوسّع الصلة ولا يلغيها.
       if (weight <= 5 && titleHits(f, [...core, ...aux]) < 1) continue;
       // سؤال لحظي من مصدر متوسط: العنوان يحمل الموضوع كله تقريباً (ينقصه كلمة على الأكثر).
-      if (opts.live && weight <= 5 && core.length >= 3 && titleHits(f, core) < Math.ceil(core.length * 0.66)) continue;
+      if (opts.live && weight <= 5 && core.length >= 3 && titleHits(f, core) < Math.min(3, Math.ceil(core.length * 0.66))) continue;
       // (4) مقال موسوعي لا يكون دليلاً إلا إن كان **عنوانه** عن موضوعنا؛
       //     ورود اللفظ داخل مقال عن شيء آخر مصادفة لا دليل.
       //     موضوع متعدد الكلمات: العنوان يغطي نصفه على الأقل — «تصميم مواقع الويب»

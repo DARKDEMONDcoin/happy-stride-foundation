@@ -422,7 +422,6 @@ export async function employeeResearch(
   // كل ما هو نتائج مصنّفة يمر على الترجيح معاً: مصدر واحد قوي يتقدّم على عشرة ضعيفة.
   let all = chunks.flatMap((c) => c.findings ?? []);
   let ranked = rankOf(all);
-  if (process.env.RDEBUG) console.log("DBG", JSON.stringify({coreTopic, bridged, auxTopic, n: all.length, r: ranked.length, s: all.slice(7,9)}));
 
   // احتياطي: أدلة قليلة أو بلا أي تأكيد متقاطع ← طلب Tavily واحد يسد الفجوة.
   const weak = ranked.length < 5 || !ranked.some((r) => r.corroborated);
