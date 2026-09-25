@@ -20,7 +20,7 @@ export type SearchIntent = {
   kinds: SearchKind[];
   /** يحتاج معلومة حديثة جداً (اليوم/الأسبوع). */
   fresh: boolean;
-  timeRange?: "day" | "week" | "month" | "year";
+  timeRange?: "day" | "week" | "month" | "year" | undefined;
   tavilyTopic: "general" | "news" | "finance";
   /** يستحق Tavily فوراً مع المصادر المجانية (لا احتياطياً). */
   tavilyFirst: boolean;

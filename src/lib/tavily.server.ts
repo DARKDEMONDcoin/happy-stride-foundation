@@ -32,8 +32,8 @@ export async function tavilySearch(
   opts: {
     news?: boolean;
     topic?: "general" | "news" | "finance";
-    timeRange?: "day" | "week" | "month" | "year";
-    country?: string;
+    timeRange?: "day" | "week" | "month" | "year" | undefined;
+    country?: string | undefined;
     max?: number;
     timeoutMs?: number;
   } = {},
