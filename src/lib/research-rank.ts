@@ -79,11 +79,27 @@ export const normalizeText = (s: string): string =>
     .replace(/\s+/g, " ")
     .trim();
 
+/** كلمات الزمن تحدد الحداثة لا الموضوع: «سعر السمك اليوم» لا يصبح دليلاً على «سعر الدولار اليوم». */
+const TIME_WORDS = new Set(["اليوم", "النهارده", "الان", "الآن", "حاليا", "today", "now", "latest", "current"]);
+const MONTHS = [
+  ["يناير", "january"], ["فبراير", "february"], ["مارس", "march"], ["ابريل", "april"], ["مايو", "may"], ["يونيو", "june"],
+  ["يوليو", "july"], ["اغسطس", "august"], ["سبتمبر", "september"], ["اكتوبر", "october"], ["نوفمبر", "november"], ["ديسمبر", "december"],
+];
+/** العنوان يذكر شهراً غير الحالي/السابق ← صفحة قديمة غالباً ولو لم تذكر السنة. */
+export function staleMonth(title: string, now = new Date()): boolean {
+  const t = ` ${normalizeText(title)} `;
+  const cur = now.getMonth();
+  return MONTHS.some(([ar, en], i) => {
+    if (i === cur || i === (cur + 11) % 12) return false;
+    return t.includes(` ${ar} `) || (en !== "may" && t.includes(` ${en} `));
+  });
+}
+
 export const topicTokens = (topic: string): string[] =>
   [...new Set(normalizeText(topic).split(" "))].filter(
     // السنة وحدها ليست موضوعاً: «2026» تظهر في كل صفحة على الإنترنت هذا العام،
     // فلو عددناها صلة تسلّل إلينا أي شيء.
-    (w) => w.length > 2 && !AR_STOP.has(w) && !/^\d+$/.test(w),
+    (w) => w.length > 2 && !AR_STOP.has(w) && !TIME_WORDS.has(w) && !/^\d+$/.test(w),
   );
 
 /**
@@ -205,6 +221,8 @@ function rankPass(
       //     وإلا فهي صفحة عن شيء آخر ورد فيه لفظنا عرَضاً.
       // تبقى سارية حتى في التمرير المتساهل: التساهل يوسّع الصلة ولا يلغيها.
       if (weight <= 5 && titleHits(f, [...core, ...aux]) < 1) continue;
+      // سؤال لحظي من مصدر متوسط: العنوان يحمل الموضوع كله تقريباً (ينقصه كلمة على الأكثر).
+      if (opts.fresh && weight <= 5 && core.length >= 3 && titleHits(f, core) < core.length - 1) continue;
       // (4) مقال موسوعي لا يكون دليلاً إلا إن كان **عنوانه** عن موضوعنا؛
       //     ورود اللفظ داخل مقال عن شيء آخر مصادفة لا دليل.
       //     موضوع متعدد الكلمات: العنوان يغطي نصفه على الأقل — «تصميم مواقع الويب»
@@ -213,7 +231,7 @@ function rankPass(
       if (ency && titleHits(f, core) < Math.max(1, Math.ceil(core.length / 2))) continue;
       // (5) ورقة بحثية دليل فقط إن كان عنوانها يغطي معظم الموضوع؛ «Quantum-Well Perovskites»
       //     ليست شرحاً لـ«الحوسبة الكمومية». التمرير المتساهل يعيدها إن شحّت الأدلة.
-      if (!relax && SCHOLARLY.test(f.source) && core.length >= 2 && titleHits(f, core) < Math.ceil(core.length * 0.6)) continue;
+      if (SCHOLARLY.test(f.source) && core.length >= 2 && titleHits(f, core) < Math.ceil(core.length * (relax ? 0.5 : 0.6))) continue;
     }
     const key = normalizeUrl(f.url);
 
@@ -231,6 +249,7 @@ function rankPass(
       // في الأسئلة اللحظية («اليوم»، «2026») صفحة 2021 أو 2024 تكاد تكون خطأ لا دليلاً.
       score -= opts.fresh ? Math.min(9, age * 3) : Math.min(4, age * 0.8);
     }
+    if (opts.fresh && !(seenYear && seenYear < year) && staleMonth(f.title)) score -= 5;
     if (HIGH_SIGNAL.test(f.url)) score += 2;
     if (LOW_SIGNAL.test(f.url)) score -= 3;
     if (f.snippet.length > 60) score += 0.5;
