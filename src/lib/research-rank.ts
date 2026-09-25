@@ -102,6 +102,16 @@ const words = (s: string): string[] =>
     .map((w) => (w.length > 4 && w.startsWith("ال") ? w.slice(2) : w))
     .filter(Boolean);
 
+/** أحدث سنة معقولة مذكورة في النص (2000..السنة الحالية)، أو undefined. */
+export function inferYear(text: string, now = new Date().getFullYear()): number | undefined {
+  let best: number | undefined;
+  for (const m of text.matchAll(/(?<!\d)(20\d{2})(?!\d)/g)) {
+    const y = Number(m[1]);
+    if (y <= now && (!best || y > best)) best = y;
+  }
+  return best;
+}
+
 export function countMatches(haystack: string, tokens: string[]): number {
   if (!tokens.length) return 0;
   const ws = new Set(words(haystack));
@@ -153,7 +163,7 @@ const fingerprint = (title: string): string =>
  */
 function rankPass(
   findings: Finding[],
-  opts: { topic?: string; aux?: string; max?: number; alt?: string } = {},
+  opts: { topic?: string; aux?: string; max?: number; alt?: string; fresh?: boolean } = {},
   /** تمرير متساهل: يُستخدم فقط حين يعود التشديد بحصيلة شبه فارغة. */
   relax = false,
 ): RankedFinding[] {
@@ -261,7 +271,7 @@ function rankPass(
  */
 export function rankFindings(
   findings: Finding[],
-  opts: { topic?: string; aux?: string; max?: number; alt?: string } = {},
+  opts: { topic?: string; aux?: string; max?: number; alt?: string; fresh?: boolean } = {},
 ): RankedFinding[] {
   const strict = rankPass(findings, opts, false);
   const evidence = strict.filter((r) => r.kind !== "context").length;
