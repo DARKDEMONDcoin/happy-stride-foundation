@@ -401,12 +401,12 @@ export async function employeeResearch(
 
   // كلمات الموضوع نفسه (بالعربية وبمقابلها الإنجليزي) هي معيار القبول،
   // والقطاع والمدينة سياق يرفع الترتيب فقط — فلا تُقبل ورقة عن «المطاعم» كدليل على «التسعير».
-  const coreTopic = `${seed} ${latinQuery(seed)} ${bridged}`;
+  const coreTopic = `${seed} ${latinQuery(seed)}`;
   const auxTopic = `${opts.industry ?? ""} ${opts.city ?? ""} ${latinQuery(opts.industry ?? "")}`;
   const rankOf = (list: Finding[]) =>
     rankFindings(
       list.filter((f) => f.kind !== "context"),
-      { topic: coreTopic, aux: auxTopic, max: 14 },
+      { topic: coreTopic, alt: bridged, aux: auxTopic, max: 14 },
     );
   // كل ما هو نتائج مصنّفة يمر على الترجيح معاً: مصدر واحد قوي يتقدّم على عشرة ضعيفة.
   let all = chunks.flatMap((c) => c.findings ?? []);

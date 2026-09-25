@@ -153,13 +153,15 @@ const fingerprint = (title: string): string =>
  */
 function rankPass(
   findings: Finding[],
-  opts: { topic?: string; aux?: string; max?: number } = {},
+  opts: { topic?: string; aux?: string; max?: number; alt?: string } = {},
   /** تمرير متساهل: يُستخدم فقط حين يعود التشديد بحصيلة شبه فارغة. */
   relax = false,
 ): RankedFinding[] {
   const max = opts.max ?? 14;
   /** كلمات الموضوع نفسه: لا يُقبل دليل لا يلمس واحدة منها على الأقل. */
-  const core = topicTokens(opts.topic ?? "");
+  const coreMain = topicTokens(opts.topic ?? "");
+  /** صياغة الموضوع بلغة أخرى (غالباً الإنجليزية): صفحة إنجليزية تُقاس بها لا بالعربي. */
+  const coreAlt = topicTokens(opts.alt ?? "").filter((t) => !coreMain.includes(t));
   /** كلمات السياق (القطاع، المدينة): ترفع الترتيب ولا تكفي وحدها للقبول. */
   const aux = topicTokens(opts.aux ?? "").filter((t) => !core.includes(t));
   const year = new Date().getFullYear();
@@ -175,6 +177,10 @@ function rankPass(
     if (BANNED_DOMAIN.test(f.url)) continue;
     if (f.kind !== "context" && NEVER_EVIDENCE.test(f.url)) continue;
     const weight = SOURCE_WEIGHT[f.source] ?? DEFAULT_WEIGHT;
+    // نقيس الدليل بلغته: أفضل تغطية بين صياغة الموضوع العربية والأجنبية.
+    const mainCov = coreMain.length ? hits(f, coreMain) / coreMain.length : 0;
+    const altCov = coreAlt.length ? hits(f, coreAlt) / coreAlt.length : 0;
+    const core = altCov > mainCov ? coreAlt : coreMain;
     const coreHit = hits(f, core);
 
     // الخلفية العامة لا تخضع لفحص الصلة لأنها لا تُقدَّم كدليل على الموضوع.
@@ -249,7 +255,7 @@ function rankPass(
  */
 export function rankFindings(
   findings: Finding[],
-  opts: { topic?: string; aux?: string; max?: number } = {},
+  opts: { topic?: string; aux?: string; max?: number; alt?: string } = {},
 ): RankedFinding[] {
   const strict = rankPass(findings, opts, false);
   const evidence = strict.filter((r) => r.kind !== "context").length;
