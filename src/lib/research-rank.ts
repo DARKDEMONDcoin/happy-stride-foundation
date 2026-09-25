@@ -112,10 +112,17 @@ export const topicTokens = (topic: string): string[] =>
  * «المصري» في «المتحف المصري الكبير»، فيتسلل مقال لا علاقة له بالموضوع.
  * نسمح بلاحقة قصيرة (جمع أو نسبة) ولا نسمح بأكثر.
  */
+/** نزع أداة التعريف وحروف العطف/الجر الملتصقة بها: «والاقتصاد» و«بالاقتصاد» و«الاقتصاد» = «اقتصاد». */
+const stem = (w: string): string => {
+  const m = /^(وال|بال|فال|كال|لل)/.exec(w);
+  if (m && w.length - m[0].length >= 3) return w.slice(m[0].length);
+  return w.length > 4 && w.startsWith("ال") ? w.slice(2) : w;
+};
+
 const words = (s: string): string[] =>
   normalizeText(s)
     .split(" ")
-    .map((w) => (w.length > 4 && w.startsWith("ال") ? w.slice(2) : w))
+    .map(stem)
     .filter(Boolean);
 
 /** أحدث سنة معقولة مذكورة في النص (2000..السنة الحالية)، أو undefined. */
@@ -134,7 +141,8 @@ export function countMatches(haystack: string, tokens: string[]): number {
   if (!tokens.length) return 0;
   const ws = new Set(words(haystack));
   const list = [...ws];
-  return tokens.filter(
+  // الكلمة المطلوبة تُجذَّع بنفس قاعدة النص، وإلا لا تطابق «الاقتصاد» أبداً «اقتصاد».
+  return tokens.map((t) => stem(t)).filter(
     (t) =>
       ws.has(t) ||
       // اللاحقة القصيرة تُسامَح للكلمات الطويلة فقط: «اعلانات» و«اعلاناتك» شيء واحد،
