@@ -109,5 +109,9 @@ export function researchIntent(message: string): ResearchIntent {
   if (RECENCY.test(text) && text.length > 24) {
     return { wanted: true, explicit: false, reason: "recency", topic };
   }
+  // أسئلة عن العالم نفسه (خبر، مباراة، بورصة، صحة، «مين هو/إيه هو»): إجابتها في الواقع لا في الذاكرة.
+  if (topic.length >= 4 && WORLD.test(text)) {
+    return { wanted: true, explicit: false, reason: "external", topic };
+  }
   return none;
 }
