@@ -42,3 +42,17 @@ test("gibberish never spends paid searches", () => {
   expect(looksLikeGibberish("logo design trends 2026")).toBe(false);
   expect(looksLikeGibberish("quantum computing")).toBe(false);
 });
+
+import { countMatches, topicTokens, staleMonth } from "../../src/lib/research-rank";
+test("Arabic definite article and prefixes match", () => {
+  const tk = topicTokens("أخبار الاقتصاد المصري اليوم");
+  expect(tk).not.toContain("اليوم");
+  expect(countMatches("خفض توقعات نمو الاقتصاد المصري", tk)).toBe(2);
+  expect(countMatches("تقرير عن والاقتصاد", ["الاقتصاد"])).toBe(1);
+  expect(countMatches("المتحف المصري الكبير", ["مصر"])).toBe(0);
+});
+test("stale month detection", () => {
+  const sept = new Date(2026, 8, 25);
+  expect(staleMonth("سعر الدولار اليوم الأحد 21 أبريل", sept)).toBe(true);
+  expect(staleMonth("سعر الدولار اليوم 24 سبتمبر", sept)).toBe(false);
+});
