@@ -357,13 +357,17 @@ export async function employeeResearch(
    * (حيث المصادر المجانية أضعف)، وإلا يُستدعى بعدها احتياطياً إن جاءت الأدلة ضعيفة.
    */
   const { tavilySearch, tavilyAvailable } = await import("./tavily.server");
-  const tq = context;
-  const hot = /(سعر|أسعار|اسعار|تكلفة|خبر|أخبار|اخبار|ترند|تريند|اليوم|الآن|حالياً|حاليا|منافس|price|news|trend|latest)/i.test(seed);
+  const { classifySearch } = await import("./search-intent");
+  const intent = classifySearch(seed);
+  // سؤال عام عن العالم (شخص، حدث، رياضة، صحة…) لا يُلوَّث بقطاع العلامة ومدينتها.
+  const worldly = intent.kinds.some((k) => ["news", "sports", "health", "science", "entity", "finance"].includes(k));
+  const tq = worldly ? seed : context;
+  const tOpts = { topic: intent.tavilyTopic, timeRange: intent.timeRange, country: opts.country };
   let tavilyUsed = false;
-  if (hot && tavilyAvailable()) {
+  if (intent.tavilyFirst && tavilyAvailable()) {
     tavilyUsed = true;
     jobs.unshift(async (): Promise<Chunk | null> => {
-      const rows = await tavilySearch(tq, { news: /(خبر|أخبار|اخبار|اليوم|news)/i.test(seed) });
+      const rows = await tavilySearch(tq, tOpts);
       return rows.length ? { part: "", used: "Tavily", findings: rows } : null;
     });
   }
@@ -386,7 +390,7 @@ export async function employeeResearch(
   // احتياطي: أدلة قليلة أو بلا أي تأكيد متقاطع ← طلب Tavily واحد يسد الفجوة.
   const weak = ranked.length < 5 || !ranked.some((r) => r.corroborated);
   if (!tavilyUsed && weak && tavilyAvailable()) {
-    const rows = await tavilySearch(tq, { timeoutMs: 6_000 });
+    const rows = await tavilySearch(tq, { ...tOpts, timeoutMs: 6_000 });
     if (rows.length) {
       chunks.push({ part: "", used: "Tavily", findings: rows });
       all = [...all, ...rows];
