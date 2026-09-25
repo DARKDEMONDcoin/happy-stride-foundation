@@ -406,7 +406,14 @@ export async function employeeResearch(
   const rankOf = (list: Finding[]) =>
     rankFindings(
       list.filter((f) => f.kind !== "context"),
-      { topic: coreTopic, alt: bridged, aux: auxTopic, max: 14 },
+      {
+        topic: coreTopic,
+        alt: bridged,
+        aux: auxTopic,
+        max: 14,
+        // سؤال لحظي أو سؤال يذكر سنة: صفحة مؤرخة بسنة قديمة لا تتصدّر.
+        fresh: intent.fresh || /\b20\d{2}\b/.test(seed),
+      },
     );
   // كل ما هو نتائج مصنّفة يمر على الترجيح معاً: مصدر واحد قوي يتقدّم على عشرة ضعيفة.
   let all = chunks.flatMap((c) => c.findings ?? []);

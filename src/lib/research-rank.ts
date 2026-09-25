@@ -206,7 +206,13 @@ function rankPass(
     score += coverage * 3;
     score += aux.length ? (hits(f, aux) / aux.length) * 1.5 : 0;
     score += titleHits(f, core) > 0 ? 1.5 : 0;
-    if (f.year) score -= Math.min(4, Math.max(0, year - f.year) * 0.8);
+    // نتائج الويب لا تحمل سنة: نستنتجها من أحدث سنة مذكورة في العنوان/المقتطف.
+    const seenYear = f.year ?? inferYear(`${f.title} ${f.snippet}`, year);
+    if (seenYear) {
+      const age = Math.max(0, year - seenYear);
+      // في الأسئلة اللحظية («اليوم»، «2026») صفحة 2021 أو 2024 تكاد تكون خطأ لا دليلاً.
+      score -= opts.fresh ? Math.min(9, age * 3) : Math.min(4, age * 0.8);
+    }
     if (HIGH_SIGNAL.test(f.url)) score += 2;
     if (LOW_SIGNAL.test(f.url)) score -= 3;
     if (f.snippet.length > 60) score += 0.5;
