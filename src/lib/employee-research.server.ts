@@ -273,7 +273,13 @@ export async function employeeResearch(
     ? ""
     : await (await import("./open-data-plus.server")).bridgeToEnglish(seed).catch(() => "");
   const context = [seed, opts.industry ?? "", opts.city ?? ""].filter(Boolean).join(" ").trim();
-  const angles = (ANGLES[employeeId] ?? ANGLES["nour"]!)(context, year);
+  // سؤال عن العالم (شخص، خبر، بورصة، رياضة، صحة) لا تُلصق به زوايا التسويق:
+  // «أخبار البورصة + تكلفة النقرة» تُفسد النتائج بدل أن تثريها.
+  const { classifySearch: cls } = await import("./search-intent");
+  const worldQ = cls(seed).kinds.some((k) => ["news", "sports", "health", "science", "entity", "finance"].includes(k));
+  const angles = worldQ
+    ? [seed, `${seed} ${year}`]
+    : (ANGLES[employeeId] ?? ANGLES["nour"]!)(context, year);
 
   type Chunk = { part: string; used: string; findings?: Finding[] };
 
