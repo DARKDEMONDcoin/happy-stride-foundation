@@ -76,6 +76,8 @@ export const Route = createFileRoute("/api/public/telegram/webhook")({
         const chatId = message?.chat?.id;
         if (!message || typeof chatId !== "number") return Response.json({ ok: true });
 
+        const text = (message.text ?? message.caption ?? "").trim();
+
         // مع بوت سهل المشترك نعرف صاحب المحادثة من قنوات التحكّم المسجّلة.
         let workspaceId = wsParam;
         if (shared) {
@@ -122,19 +124,21 @@ export const Route = createFileRoute("/api/public/telegram/webhook")({
               await telegramReply(
                 botToken,
                 chatId,
-                code.length === 6
-                  ? "الكود غير صحيح أو انتهت صلاحيته. اطلب كوداً جديداً من إعدادات سهل ← تيليجرام."
-                  : "هذه المحادثة غير مربوطة بأي حساب في سهل — افتح سهل ← الإعدادات ← تيليجرام، اضغط «أنشئ كود ربط»، ثم أرسل الكود هنا.",
+                "الكود غير صحيح أو انتهت صلاحيته. اطلب كوداً جديداً من إعدادات سهل ← تيليجرام.",
               ).catch(() => null);
               return Response.json({ ok: true });
             }
-            workspaceId = resolved;
+            await telegramReply(
+              botToken,
+              chatId,
+              "هذه المحادثة غير مربوطة بأي حساب في سهل — افتح سهل ← الإعدادات ← تيليجرام، اضغط «أنشئ كود ربط»، ثم أرسل الكود هنا.",
+            ).catch(() => null);
+            return Response.json({ ok: true });
           }
           workspaceId = resolved;
         }
         void workspaceId;
 
-        const text = (message.text ?? message.caption ?? "").trim();
         try {
           // محادثة المالك الخاصة: فريق سهل كامل (نص/صوت/صور/ملفات) بعقل الموقع نفسه.
           // منشورات القنوات والمحادثات غير المربوطة تبقى على المسار القديم.
