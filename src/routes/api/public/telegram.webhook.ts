@@ -76,15 +76,62 @@ export const Route = createFileRoute("/api/public/telegram/webhook")({
         const chatId = message?.chat?.id;
         if (!message || typeof chatId !== "number") return Response.json({ ok: true });
 
+        const text = (message.text ?? message.caption ?? "").trim();
+
         // مع بوت سهل المشترك نعرف صاحب المحادثة من قنوات التحكّم المسجّلة.
         let workspaceId = wsParam;
         if (shared) {
           const resolved = await workspaceForChat(supabaseAdmin, String(chatId));
           if (!resolved) {
+            // فرصة لربط المحادثة: هل الرسالة كود ربط مكوّن من 6 رموز؟
+            const code = text.toUpperCase().replace(/[^A-Z0-9]/g, "");
+            if (code.length === 6) {
+              const { data: row } = await supabaseAdmin
+                .from("command_link_codes")
+                .select("code, workspace_id, role, label, expires_at, used_at")
+                .eq("code", code)
+                .eq("channel", "telegram")
+                .maybeSingle();
+              if (row && !row.used_at && new Date(row.expires_at) >= new Date()) {
+                await supabaseAdmin.from("command_links").upsert(
+                  {
+                    workspace_id: row.workspace_id,
+                    channel: "telegram",
+                    external_id: String(chatId),
+                    role: row.role,
+                    label: row.label,
+                    status: "active",
+                    last_seen_at: new Date().toISOString(),
+                  },
+                  { onConflict: "channel,external_id" },
+                );
+                await supabaseAdmin
+                  .from("command_link_codes")
+                  .update({ used_at: new Date().toISOString() })
+                  .eq("code", row.code);
+                await telegramReply(
+                  botToken,
+                  chatId,
+                  [
+                    "✅ تم ربط محادثتك بحسابك في سهل.",
+                    "اكتب طلبك مباشرة، مثال:",
+                    "«يا سِراج اكتب بوست عن فوز الفريق واعمل عرض خصم ٥٠٪ حتى منتصف الليل».",
+                    "أو استخدم الأوامر: /siraj /nour /dana /adam /eva /sam و /team.",
+                  ].join("\n"),
+                ).catch(() => null);
+                return Response.json({ ok: true });
+              }
+              await telegramReply(
+                botToken,
+                chatId,
+                "الكود غير صحيح أو انتهت صلاحيته. اطلب كوداً جديداً من إعدادات سهل ← تيليجرام.",
+              ).catch(() => null);
+              return Response.json({ ok: true });
+            }
             await telegramReply(
               botToken,
               chatId,
-              "هذه المحادثة غير مربوطة بأي حساب في سهل — افتح الإعدادات ← تيليجرام واربطها أولاً.",
+              "هذه المحادثة غير مربوطة بأي حساب في سهل — افتح سهل ← الإعدادات ← تيليجرام، اضغط «أنشئ كود ربط»، ثم أرسل الكود هنا.",
             ).catch(() => null);
             return Response.json({ ok: true });
           }
@@ -92,7 +139,6 @@ export const Route = createFileRoute("/api/public/telegram/webhook")({
         }
         void workspaceId;
 
-        const text = (message.text ?? message.caption ?? "").trim();
         try {
           // محادثة المالك الخاصة: فريق سهل كامل (نص/صوت/صور/ملفات) بعقل الموقع نفسه.
           // منشورات القنوات والمحادثات غير المربوطة تبقى على المسار القديم.
