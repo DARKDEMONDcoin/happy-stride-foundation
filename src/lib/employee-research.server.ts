@@ -38,6 +38,7 @@ import {
   lobstersHot,
   npmPackages,
   openLibraryBooks,
+  marketQuotes,
   wikimediaArabic,
 } from "./open-data-plus.server";
 import { latinQuery } from "./query-translate";
@@ -150,6 +151,8 @@ function openSourcesFor(
 
   /** المصادر التي يستدعيها الموضوع — متاحة لكل موظف بلا استثناء. */
   const byTopic: (() => Promise<Finding[]>)[] = [];
+  // أصل سوقي صريح (ذهب، نفط، مؤشر): سعر لحظي موثّق بدل مقالات قديمة عنه.
+  byTopic.push(() => marketQuotes(t));
   if (wantsMoney) {
     byTopic.push(
       () => worldBankFacts(ctx.country || "EG"),

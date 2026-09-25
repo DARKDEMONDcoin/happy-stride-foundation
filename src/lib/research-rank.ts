@@ -19,6 +19,7 @@ const SOURCE_WEIGHT: Record<string, number> = {
   arXiv: 7,
   Wikidata: 7,
   "Exchange Rate API": 8,
+  "Yahoo Finance": 8,
   "Wayback Machine": 7,
   OpenStreetMap: 8,
   "Google Trends": 8,
