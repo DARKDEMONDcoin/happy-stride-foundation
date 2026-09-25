@@ -24,12 +24,12 @@ async function assertOwner(
 
 const wsInput = z.object({ workspaceId: z.string().uuid() });
 
-const PROJECT_ID = "541025ee-163e-49a6-8c43-600f36bcb147";
+const PROJECT_ID = "c04206f7-58fc-47a2-95b2-96102d0af72c";
 const ALLOWED_RETURN_HOSTS = new Set([
   `project--${PROJECT_ID}.lovable.app`,
   `project--${PROJECT_ID}-dev.lovable.app`,
   `id-preview--${PROJECT_ID}.lovable.app`,
-  "template-joyful-exchange.lovable.app",
+  "happy-stride-foundation.lovable.app",
   "localhost:8080",
 ]);
 

@@ -25,7 +25,7 @@ const PROJECT_ID = "c04206f7-58fc-47a2-95b2-96102d0af72c";
 export function publicOrigin(): string {
   const fromEnv = (process.env["PUBLIC_APP_ORIGIN"] ?? "").trim().replace(/\/+$/, "");
   if (fromEnv.startsWith("https://")) return fromEnv;
-  return `https://project--${PROJECT_ID}-dev.lovable.app`;
+  return `https://project--${PROJECT_ID}.lovable.app`;
 }
 
 export function webhookUrlFor(workspaceId: string): string {
