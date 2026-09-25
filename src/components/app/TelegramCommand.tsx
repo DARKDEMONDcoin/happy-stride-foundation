@@ -115,9 +115,9 @@ export function TelegramCommand({ workspaceId }: { workspaceId: string }) {
 
   if (isLoading) {
     return (
-      <p className="flex items-center gap-2 text-sm text-muted-foreground">
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <BrandLoader size="sm" />
-      </p>
+      </div>
     );
   }
 
