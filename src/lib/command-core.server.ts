@@ -20,9 +20,9 @@ export type IncomingCommand = {
   text: string;
 };
 
-const APPROVE = /^(انشر|أنشر|نشر|انشرها|تمام|موافق|اعتمد|ok|okay|yes|✅|1)$/i;
-const CANCEL = /^(الغاء|إلغاء|الغِ|لا|cancel|stop|0)$/i;
-const EDIT = /^(عدل|عدّل|تعديل|غير|غيّر|edit)\b/i;
+export const APPROVE = /^(انشر|أنشر|نشر|انشرها|تمام|موافق|اعتمد|ok|okay|yes|✅|1)$/i;
+export const CANCEL = /^(الغاء|إلغاء|الغِ|لا|cancel|stop|0)$/i;
+export const EDIT = /^(عدل|عدّل|تعديل|غير|غيّر|edit)\b/i;
 
 /** توجيه الطلب للموظف المناسب من الاسم أو من موضوع الطلب. */
 const EMPLOYEE_MATCHERS: { id: string; name: string; re: RegExp }[] = [
