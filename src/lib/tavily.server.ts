@@ -41,7 +41,7 @@ export async function tavilySearch(
   const q = query.trim().replace(/\s+/g, " ").slice(0, 380);
   if (q.length < 3) return [];
   const topic = opts.topic ?? (opts.news ? "news" : "general");
-  const key = `${topic}|${opts.timeRange ?? ""}|${q.toLowerCase()}`;
+  const key = `${topic}|${opts.timeRange ?? ""}|${opts.country ?? ""}|${q.toLowerCase()}`;
   const hit = cache.get(key);
   if (hit && Date.now() - hit.at < CACHE_TTL) return hit.rows;
   const running = inflight.get(key);
