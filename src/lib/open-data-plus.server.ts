@@ -224,3 +224,54 @@ export async function bridgeToEnglish(arabic: string): Promise<string> {
   }
   return "";
 }
+
+/**
+ * أسعار الأسواق العالمية اللحظية (ذهب، نفط، مؤشرات، بيتكوين) من واجهة Yahoo Finance العامة.
+ * تُستدعى فقط حين يذكر الموضوع أصلاً سوقياً صريحاً — لا تضيف ضجيجاً لغير ذلك.
+ */
+const MARKETS: { re: RegExp; sym: string; name: string }[] = [
+  { re: /(ذهب|الذهب|gold)/i, sym: "GC=F", name: "الذهب (أونصة، دولار)" },
+  { re: /(فضة|الفضة|silver)/i, sym: "SI=F", name: "الفضة (أونصة، دولار)" },
+  { re: /(نفط|النفط|برنت|بترول|oil|brent)/i, sym: "BZ=F", name: "نفط برنت (برميل، دولار)" },
+  { re: /(بيتكوين|bitcoin|btc)/i, sym: "BTC-USD", name: "بيتكوين (دولار)" },
+  { re: /(ناسداك|nasdaq)/i, sym: "^IXIC", name: "مؤشر ناسداك" },
+  { re: /(s&p|اس اند بي|داو|dow)/i, sym: "^GSPC", name: "مؤشر S&P 500" },
+  { re: /(البورصة المصرية|egx|إيجي إكس)/i, sym: "^CASE30", name: "مؤشر EGX30" },
+  { re: /(تداول|البورصة السعودية|tasi)/i, sym: "^TASI.SR", name: "مؤشر تاسي" },
+];
+
+export function marketSymbolsFor(topic: string): typeof MARKETS {
+  return MARKETS.filter((m) => m.re.test(topic)).slice(0, 3);
+}
+
+export async function marketQuotes(topic: string): Promise<Finding[]> {
+  const picks = marketSymbolsFor(topic);
+  if (!picks.length) return [];
+  const rows = await Promise.all(
+    picks.map(async (m) => {
+      try {
+        const j = await safeJson<{
+          chart?: { result?: { meta?: { regularMarketPrice?: number; chartPreviousClose?: number; regularMarketTime?: number; currency?: string } }[] };
+        }>(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(m.sym)}?range=1d&interval=1d`, API);
+        const meta = j?.chart?.result?.[0]?.meta;
+        const p = meta?.regularMarketPrice;
+        if (!p || !meta?.regularMarketTime) return null;
+        // سعر أقدم من 4 أيام ليس «لحظياً» — لا نقدمه كدليل حيّ.
+        if (Date.now() / 1000 - meta.regularMarketTime > 4 * 86400) return null;
+        const prev = meta.chartPreviousClose;
+        const ch = prev ? (((p - prev) / prev) * 100).toFixed(2) : "";
+        const when = new Date(meta.regularMarketTime * 1000).toISOString().slice(0, 16).replace("T", " ");
+        return {
+          title: `${m.name}: ${p.toLocaleString("en-US")} ${meta.currency ?? ""}`.trim(),
+          url: `https://finance.yahoo.com/quote/${encodeURIComponent(m.sym)}`,
+          snippet: `آخر سعر ${p}${ch ? ` (تغيّر ${ch}% عن الإغلاق السابق)` : ""} — بتوقيت ${when} UTC.`,
+          source: "Yahoo Finance",
+          year: new Date(meta.regularMarketTime * 1000).getFullYear(),
+        } as Finding;
+      } catch {
+        return null;
+      }
+    }),
+  );
+  return rows.filter((r): r is Finding => Boolean(r));
+}
