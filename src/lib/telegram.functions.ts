@@ -30,7 +30,7 @@ export const telegramStatus = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => wsInput.parse(input))
   .handler(async ({ data, context }) => {
     const admin = await assertOwner(context.supabase, data.workspaceId);
-    const { loadTelegramConfig, platformBot } = await import("./telegram.server");
+    const { loadTelegramConfig, platformBot, registerWebhook } = await import("./telegram.server");
     const [config, { data: links }, platform] = await Promise.all([
       loadTelegramConfig(admin, data.workspaceId),
       admin
@@ -41,6 +41,15 @@ export const telegramStatus = createServerFn({ method: "POST" })
         .order("created_at", { ascending: true }),
       platformBot(),
     ]);
+    if (platform) {
+      try {
+        // بوت سهل واحد لكل العملاء؛ فتح صفحة تيليجرام يعيد توجيهه تلقائياً
+        // إلى أحدث نسخة من المشروع إن كان ما زال مربوطاً بعنوان قديم.
+        await registerWebhook(data.workspaceId, platform.token, true);
+      } catch (error) {
+        console.error("[telegram] shared webhook refresh failed:", error);
+      }
+    }
     return {
       connected: Boolean(config?.botToken),
       usesSharedBot: Boolean(config?.shared),
