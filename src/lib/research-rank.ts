@@ -103,6 +103,8 @@ const words = (s: string): string[] =>
     .filter(Boolean);
 
 /** أحدث سنة معقولة مذكورة في النص (2000..السنة الحالية)، أو undefined. */
+const SCHOLARLY = /^(arXiv|OpenAlex|Crossref|Europe PMC|Semantic Scholar|PubMed)$/i;
+
 export function inferYear(text: string, now = new Date().getFullYear()): number | undefined {
   let best: number | undefined;
   for (const m of text.matchAll(/(?<!\d)(20\d{2})(?!\d)/g)) {
@@ -209,6 +211,9 @@ function rankPass(
       //     ليست دليلاً على «اتجاهات تصميم الشعارات». ويكيبيديا عبر بحث الويب تُعامل بالمثل.
       const ency = ENCYCLOPEDIC.has(f.source) || /(^|\.)wikipedia\.org/i.test(domainOf(f.url));
       if (ency && titleHits(f, core) < Math.max(1, Math.ceil(core.length / 2))) continue;
+      // (5) ورقة بحثية دليل فقط إن كان عنوانها يغطي معظم الموضوع؛ «Quantum-Well Perovskites»
+      //     ليست شرحاً لـ«الحوسبة الكمومية». التمرير المتساهل يعيدها إن شحّت الأدلة.
+      if (!relax && SCHOLARLY.test(f.source) && core.length >= 2 && titleHits(f, core) < Math.ceil(core.length * 0.6)) continue;
     }
     const key = normalizeUrl(f.url);
 
