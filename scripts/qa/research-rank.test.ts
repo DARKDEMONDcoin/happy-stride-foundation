@@ -55,4 +55,6 @@ test("stale month detection", () => {
   const sept = new Date(2026, 8, 25);
   expect(staleMonth("سعر الدولار اليوم الأحد 21 أبريل", sept)).toBe(true);
   expect(staleMonth("سعر الدولار اليوم 24 سبتمبر", sept)).toBe(false);
+  expect(staleMonth("نشرة الاقتصاد 1-2-2026", sept)).toBe(true);
+  expect(staleMonth("الدولار الإثنين 21-9-2026", sept)).toBe(false);
 });

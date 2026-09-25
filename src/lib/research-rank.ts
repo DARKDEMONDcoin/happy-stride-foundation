@@ -89,6 +89,12 @@ const MONTHS = [
 export function staleMonth(title: string, now = new Date()): boolean {
   const t = ` ${normalizeText(title)} `;
   const cur = now.getMonth();
+  // تاريخ رقمي «1-2-2026» أو «2026-02-01»: الشهر فيه غير الحالي/السابق ← قديم.
+  const d = /(?<!\d)(\d{1,2})[-/.](\d{1,2})[-/.](20\d{2})(?!\d)/.exec(title) ?? null;
+  if (d) {
+    const mo = Number(d[2]) - 1;
+    if (mo >= 0 && mo < 12 && mo !== cur && mo !== (cur + 11) % 12) return true;
+  }
   return MONTHS.some(([ar, en], i) => {
     if (i === cur || i === (cur + 11) % 12) return false;
     return t.includes(` ${ar} `) || (en !== "may" && t.includes(` ${en} `));
