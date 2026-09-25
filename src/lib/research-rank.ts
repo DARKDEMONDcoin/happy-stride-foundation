@@ -163,7 +163,7 @@ function rankPass(
   /** صياغة الموضوع بلغة أخرى (غالباً الإنجليزية): صفحة إنجليزية تُقاس بها لا بالعربي. */
   const coreAlt = topicTokens(opts.alt ?? "").filter((t) => !coreMain.includes(t));
   /** كلمات السياق (القطاع، المدينة): ترفع الترتيب ولا تكفي وحدها للقبول. */
-  const aux = topicTokens(opts.aux ?? "").filter((t) => !core.includes(t));
+  const aux = topicTokens(opts.aux ?? "").filter((t) => !coreMain.includes(t) && !coreAlt.includes(t));
   const year = new Date().getFullYear();
   const byUrl = new Map<string, RankedFinding>();
   const prints = new Map<string, Set<string>>();
