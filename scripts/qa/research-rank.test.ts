@@ -33,3 +33,12 @@ describe("research ranking", () => {
     expect(rows.some((r) => r.url.includes("wikipedia"))).toBe(false);
   });
 });
+
+import { looksLikeGibberish } from "../../src/lib/search-intent";
+test("gibberish never spends paid searches", () => {
+  expect(looksLikeGibberish("asdkjh qwe")).toBe(true);
+  expect(looksLikeGibberish("سعر الذهب")).toBe(false);
+  expect(looksLikeGibberish("strength training")).toBe(false);
+  expect(looksLikeGibberish("logo design trends 2026")).toBe(false);
+  expect(looksLikeGibberish("quantum computing")).toBe(false);
+});

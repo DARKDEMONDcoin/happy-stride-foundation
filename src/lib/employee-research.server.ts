@@ -388,7 +388,9 @@ export async function employeeResearch(
   const worldly = intent.kinds.some((k) => ["news", "sports", "health", "science", "entity", "finance"].includes(k));
   const tq = worldly ? seed : context;
   const tOpts = { topic: intent.tavilyTopic, timeRange: intent.timeRange, country: opts.country };
-  let tavilyUsed = false;
+  // نص بلا كلمات حقيقية (لوحة مفاتيح عشوائية): لا نحرق من حصة Tavily المدفوعة عليه.
+  const { looksLikeGibberish } = await import("./search-intent");
+  let tavilyUsed = looksLikeGibberish(seed);
   if (intent.tavilyFirst && tavilyAvailable()) {
     tavilyUsed = true;
     jobs.unshift(async (): Promise<Chunk | null> => {

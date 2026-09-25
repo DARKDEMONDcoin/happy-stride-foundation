@@ -67,3 +67,16 @@ export function classifySearch(text: string): SearchIntent {
 
   return { kinds, fresh, timeRange, tavilyTopic, tavilyFirst };
 }
+
+/**
+ * نص لاتيني بلا كلمات حقيقية («asdkjh qwe»): أغلب كلماته فيها 5 حروف ساكنة متتالية
+ * أو هي صفوف لوحة المفاتيح. العربي والأرقام والرموز الحقيقية لا تُعد عشوائية.
+ */
+export function looksLikeGibberish(text: string): boolean {
+  const t = text.trim().toLowerCase();
+  if (!t || /[\u0600-\u06FF]/.test(t) || !/^[a-z\s]+$/.test(t)) return false;
+  const words = t.split(/\s+/).filter(Boolean);
+  const rows = /^(qwe|wer|ert|asd|sdf|dfg|zxc|xcv|jkl|hjk|uio|iop)/;
+  const bad = words.filter((w) => /[bcdfghjklmnpqrstvwxz]{5,}/.test(w) || (w.length <= 6 && rows.test(w) && !/[aeiou]{1}.*[aeiou]/.test(w.slice(3))));
+  return bad.length / words.length >= 0.5 && words.every((w) => !/^(the|and|how|what|best|price|news)$/.test(w));
+}
