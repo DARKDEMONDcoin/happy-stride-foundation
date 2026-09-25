@@ -189,7 +189,7 @@ const fingerprint = (title: string): string =>
  */
 function rankPass(
   findings: Finding[],
-  opts: { topic?: string; aux?: string; max?: number; alt?: string; fresh?: boolean } = {},
+  opts: { topic?: string; aux?: string; max?: number; alt?: string; fresh?: boolean; live?: boolean } = {},
   /** تمرير متساهل: يُستخدم فقط حين يعود التشديد بحصيلة شبه فارغة. */
   relax = false,
 ): RankedFinding[] {
@@ -230,7 +230,7 @@ function rankPass(
       // تبقى سارية حتى في التمرير المتساهل: التساهل يوسّع الصلة ولا يلغيها.
       if (weight <= 5 && titleHits(f, [...core, ...aux]) < 1) continue;
       // سؤال لحظي من مصدر متوسط: العنوان يحمل الموضوع كله تقريباً (ينقصه كلمة على الأكثر).
-      if (opts.fresh && weight <= 5 && core.length >= 3 && titleHits(f, core) < core.length - 1) continue;
+      if (opts.live && weight <= 5 && core.length >= 3 && titleHits(f, core) < Math.ceil(core.length * 0.66)) continue;
       // (4) مقال موسوعي لا يكون دليلاً إلا إن كان **عنوانه** عن موضوعنا؛
       //     ورود اللفظ داخل مقال عن شيء آخر مصادفة لا دليل.
       //     موضوع متعدد الكلمات: العنوان يغطي نصفه على الأقل — «تصميم مواقع الويب»
@@ -239,7 +239,7 @@ function rankPass(
       if (ency && titleHits(f, core) < Math.max(1, Math.ceil(core.length / 2))) continue;
       // (5) ورقة بحثية دليل فقط إن كان عنوانها يغطي معظم الموضوع؛ «Quantum-Well Perovskites»
       //     ليست شرحاً لـ«الحوسبة الكمومية». التمرير المتساهل يعيدها إن شحّت الأدلة.
-      if (SCHOLARLY.test(f.source) && core.length >= 2 && titleHits(f, core) < Math.ceil(core.length * 0.6)) continue;
+      if (SCHOLARLY.test(f.source) && core.length >= 2 && titleHits(f, core) < Math.ceil(core.length * 0.75)) continue;
     }
     const key = normalizeUrl(f.url);
 
@@ -306,7 +306,7 @@ function rankPass(
  */
 export function rankFindings(
   findings: Finding[],
-  opts: { topic?: string; aux?: string; max?: number; alt?: string; fresh?: boolean } = {},
+  opts: { topic?: string; aux?: string; max?: number; alt?: string; fresh?: boolean; live?: boolean } = {},
 ): RankedFinding[] {
   const strict = rankPass(findings, opts, false);
   const evidence = strict.filter((r) => r.kind !== "context").length;

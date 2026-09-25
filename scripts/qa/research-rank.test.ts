@@ -17,7 +17,7 @@ describe("research ranking", () => {
         f("سعر الذهب اليوم 26 أبريل 2024 في مصر", "https://a.com/1"),
         f("سعر الذهب اليوم في مصر لحظة بلحظة", "https://b.com/2"),
       ],
-      { topic: "سعر الذهب اليوم في مصر", fresh: true },
+      { topic: "سعر الذهب اليوم في مصر", fresh: true, live: true },
     );
     expect(rows[0].url).toBe("https://b.com/2");
   });
