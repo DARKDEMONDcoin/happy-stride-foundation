@@ -205,7 +205,10 @@ function rankPass(
       if (weight <= 5 && titleHits(f, [...core, ...aux]) < 1) continue;
       // (4) مقال موسوعي لا يكون دليلاً إلا إن كان **عنوانه** عن موضوعنا؛
       //     ورود اللفظ داخل مقال عن شيء آخر مصادفة لا دليل.
-      if (ENCYCLOPEDIC.has(f.source) && titleHits(f, core) < 1) continue;
+      //     موضوع متعدد الكلمات: العنوان يغطي نصفه على الأقل — «تصميم مواقع الويب»
+      //     ليست دليلاً على «اتجاهات تصميم الشعارات». ويكيبيديا عبر بحث الويب تُعامل بالمثل.
+      const ency = ENCYCLOPEDIC.has(f.source) || /(^|\.)wikipedia\.org/i.test(domainOf(f.url));
+      if (ency && titleHits(f, core) < Math.max(1, Math.ceil(core.length / 2))) continue;
     }
     const key = normalizeUrl(f.url);
 
